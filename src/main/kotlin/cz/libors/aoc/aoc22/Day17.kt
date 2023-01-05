@@ -4,7 +4,7 @@ import cz.libors.util.Body
 import cz.libors.util.Point
 import cz.libors.util.readToText
 
-typealias Rock = Body
+private typealias Rock = Body
 
 object Day17 {
 

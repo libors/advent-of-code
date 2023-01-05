@@ -15,14 +15,18 @@ object Day19 {
         bluePrints.mapIndexed { idx, it ->
             totmax = 0
             hash.clear()
-            dfs(it, listOf(1, 0, 0, 0), listOf(0, 0, 0, 0), 24) * (idx + 1)
+            maxCosts = (0..3).map { num -> it.maxOf { x -> x[num] } }
+            costs = it
+            dfs(listOf(1, 0, 0, 0), listOf(0, 0, 0, 0), 24, false) * (idx + 1)
         }.sumOf { it }
 
     private fun task2(bluePrints: List<List<List<Int>>>) =
         bluePrints.take(3).map {
             totmax = 0
             hash.clear()
-            dfs(it, listOf(1, 0, 0, 0), listOf(0, 0, 0, 0), 32)
+            maxCosts = (0..3).map { num -> it.maxOf { x -> x[num] } }
+            costs = it
+            dfs(listOf(1, 0, 0, 0), listOf(0, 0, 0, 0), 32, false)
         }.reduce { x, y -> x * y }
 
     @JvmStatic
@@ -42,47 +46,36 @@ object Day19 {
     }
 
     var calls = 0
-    fun dfs(
-        costs: List<List<Int>>,
-        robots: List<Int>,
-        resources: List<Int>,
-        time: Int
-    ): Int {
-        if (++calls % 1000000 == 0) {
-            debug(calls)
-        }
+    var maxCosts = listOf<Int>()
+    var costs = listOf<List<Int>>()
+    fun dfs(robots: List<Int>, resources: List<Int>, time: Int, skipCreate: Boolean): Int {
+        if (++calls % 1000000 == 0) debug(calls)
         if (time == 0) return resources[GE]
-        if (totmax > 0 && resources[GE] + possibleMax(time, robots[GE]) <= totmax) {
+        if (totmax > 0 && resources[GE] + possibleMaxGeodeProd(time, robots[GE]) < totmax) {
             return 0
         }
-        val hashKey = buildKey(robots.toList(), resources.toList(), time)
+        val hashKey = HashKey.build(robots.toList(), resources.toList(), time)
         val hashResult = hash[hashKey]
         if (hashResult != null) return hashResult
 
         val newResources = robots.mapIndexed { idx, x -> resources[idx] + x }
         val scores = mutableListOf<Int>()
-        (GE downTo OR).forEach {
-            if (resources.coverCosts(costs[it]))
-                scores.add(dfs(costs, robots.increase(it), newResources.afterBuy(costs[it]), time - 1))
+        (OR..GE).forEach {
+            val maxCost = maxCosts[it] // if a robot costs X material, no need to build more then X creators of the material
+            if ((maxCost == 0 || maxCost > robots[it])
+                && resources.coverCosts(costs[it])
+                && (!skipCreate || !robots.mapIndexed { idx, x -> resources[idx] - x}.coverCosts(costs[it])))
+                scores.add(dfs(robots.increase(it), newResources.afterBuy(costs[it]), time - 1, false))
         }
-        scores.add(dfs(costs, robots, newResources, time - 1))
+        scores.add(dfs(robots, newResources, time - 1, true))
+
         val max = scores.maxOf { it }
         hash[hashKey] = max
         if (max > totmax) totmax = max
         return max
     }
 
-    private inline fun buildKey(robots: List<Int>, resources: List<Int>, time: Int): HashKey {
-        val i = robots[0] + (robots[1] shl 8) + (robots[2] shl 16) + (robots[3] shl 24)
-        val j: Long = resources[0] +
-                (resources[1].toLong() shl 10) +
-                (resources[2].toLong() shl 20) +
-                (resources[3].toLong() shl 30) +
-                time shl 40
-        return HashKey(i, j)
-    }
-
-    private inline fun possibleMax(time: Int, gRobots: Int) = gRobots * time + (time * time - 1) / 2
+    private inline fun possibleMaxGeodeProd(time: Int, gRobots: Int) = gRobots * time + (time * (time - 1)) / 2
 
     private inline fun List<Int>.coverCosts(costs: List<Int>) = this.zip(costs).all { it.first >= it.second }
     private inline fun List<Int>.increase(index: Int) =
@@ -90,5 +83,17 @@ object Day19 {
 
     private inline fun List<Int>.afterBuy(costs: List<Int>) = this.zip(costs).map { it.first - it.second }
 
-    data class HashKey(val robots: Int, val resourcesAndTime: Long)
+    data class HashKey(val robots: Int, val resourcesAndTime: Long) {
+        companion object {
+            inline fun build(robots: List<Int>, resources: List<Int>, time: Int): HashKey {
+                val i = robots[0] + (robots[1] shl 8) + (robots[2] shl 16) + (robots[3] shl 24)
+                val j: Long = resources[0] +
+                        (resources[1].toLong() shl 10) +
+                        (resources[2].toLong() shl 20) +
+                        (resources[3].toLong() shl 30) +
+                        (time.toLong() shl 40)
+                return HashKey(i, j)
+            }
+        }
+    }
 }

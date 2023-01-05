@@ -181,10 +181,10 @@ fun BinOperation(ch: Char): BinOperation = when (ch) {
 
 val DEBUG_ON = false
 
-fun debug(x: String) {
-    if (DEBUG_ON) println(x)
+fun debug() {
+    if (DEBUG_ON) println()
 }
 
-fun debug(x: Int) {
+fun debug(x: Any) {
     if (DEBUG_ON) println(x)
 }

@@ -1,11 +1,12 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.debug
 import cz.libors.util.findInts
 import cz.libors.util.readToLines
 import java.util.*
 import kotlin.collections.HashMap
 
-typealias OpenSet = Int
+private typealias OpenSet = Int
 
 object Day16 {
 
@@ -63,9 +64,8 @@ object Day16 {
             precomputedRates[idx] = v
         }
 
-        println("*" + task1(valves))
-        println("**" + task2(valves))
-        println(positions)
+        println(task1(valves))
+        println(task2(valves))
     }
 
     private fun solve2(valves: List<Valve>): Int {
@@ -77,17 +77,17 @@ object Day16 {
         while (!queue.isEmpty()) {
             val x = queue.poll()
             if (++positions % 10000000 == 0L) {
-                println()
-                println("positions: ${positions / 1000000} mil")
-                println("hash stopped: ${stopped / 1000000} mil, score stopped: ${sizeStopped / 1000000} mil")
-                println("queue size: ${queue.size}, hash size: ${hash2.size}")
-                println()
+                debug()
+                debug("positions: ${positions / 1000000} mil")
+                debug("hash stopped: ${stopped / 1000000} mil, score stopped: ${sizeStopped / 1000000} mil")
+                debug("queue size: ${queue.size}, hash size: ${hash2.size}")
+                debug()
             }
 
             if (x.open == everythingOpen || x.remainingTime == 0) {
                 if (x.score > maxScore) {
                     maxScore = x.score
-                    println("*** new max: $maxScore in ${(System.currentTimeMillis() - start) / 1000} sec")
+                    debug("*** new max: $maxScore in ${(System.currentTimeMillis() - start) / 1000} sec")
                 }
                 continue
             }
@@ -127,7 +127,7 @@ object Day16 {
             }
 
         }
-        println("Running time(s): ${(System.currentTimeMillis() - start) / 1000}")
+        debug("Running time(s): ${(System.currentTimeMillis() - start) / 1000}")
         return maxScore
     }
 
@@ -149,7 +149,7 @@ object Day16 {
     }
 
     private fun solve(score: Int, open: OpenSet, current: Valve, remainingTime: Int, path: List<PathRec>): Int {
-        if (++positions % 10000000 == 0L) println(positions)
+        if (++positions % 10000000 == 0L) debug(positions)
         if (open == everythingOpen || remainingTime == 0) {
             return score
         }

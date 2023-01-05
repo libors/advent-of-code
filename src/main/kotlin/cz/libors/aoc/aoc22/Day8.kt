@@ -2,7 +2,7 @@ package cz.libors.aoc.aoc22
 
 import cz.libors.util.readToLines
 
-typealias Tree = Pair<Int, Int>
+private typealias Tree = Pair<Int, Int>
 
 object Day8 {
 
