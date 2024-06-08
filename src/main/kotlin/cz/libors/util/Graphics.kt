@@ -12,13 +12,19 @@ import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
+typealias ColorSchema = (Point, Int) -> Color
 
 class Graphics(
     val debugFromStart: Boolean = true,
     val delay: Long = 100,
+    val rememberHistory: Boolean = false,
+    circles: Boolean = false,
     minBoundingBox: Pair<Point, Point>? = null,
     showEmpty: Boolean = false,
-    inverse: Boolean = false
+    inverse: Boolean = false,
+    val displayLabels: Boolean = true,
+    val colorSchema: ColorSchema = ColorSchemas.staticColors(),
+    labelColor: Color = Color.GRAY
 ) {
 
     private val surface: Surface
@@ -29,12 +35,9 @@ class Graphics(
     private val snapshots = mutableListOf<Snapshot>()
     private var snapshotIdx = 0
 
-    private var colors = listOf(Color.BLUE, Color.GREEN, Color.ORANGE, Color.CYAN, Color.YELLOW, Color.MAGENTA,
-        Color.RED, Color.PINK, Color.GRAY, Color.BLACK)
-
     init {
         val keyListener = MyKeyAdapter({ debugSwitch() }, { previous() }, { next() })
-        surface = Surface(keyListener, showEmpty, inverse, minBoundingBox)
+        surface = Surface(keyListener, circles, showEmpty, inverse, minBoundingBox, labelColor)
     }
 
     private fun init() {
@@ -57,7 +60,7 @@ class Graphics(
     }
 
     private fun previous() {
-        if (debugOn) {
+        if (debugOn && rememberHistory) {
             if (snapshotIdx > 0) {
                 snapshotIdx--
                 showSnapshot(snapshots[snapshotIdx])
@@ -74,34 +77,53 @@ class Graphics(
         }
     }
 
+    fun showInts(points: Map<Point, Int>) {
+        val showPoints = points.map { ShowPoint(it.key, colorSchema(it.key, it.value), null) }
+        showGraphicPoints(showPoints, "")
+    }
+
     fun showChars(points: Map<Point, Char>, order: String, showNotStated: Boolean = false) {
-        val charPoints = points.entries.groupBy({ it.value }, { it.key })
-        val bodies = order.toCharArray()
-            .map { (charPoints[it] ?: emptyList()) }
-            .map { Body(it.toSet()) }
-        if (showNotStated) {
-            val others = charPoints.filter { !order.contains(it.key) }.values
-                .sortedByDescending { it.size }
-                .map { Body(it.toSet()) }
-            showBodies(bodies + others)
-        } else {
-            showBodies(bodies)
+        val result = mutableListOf<ShowPoint>()
+        val orderIndices = order.toCharArray().mapIndexed { idx, ch -> ch to idx }.toMap()
+        val otherIndices = if (!showNotStated) mapOf() else
+            points.filter { it.value !in orderIndices }
+                .map { it.value }.groupingBy { it }.eachCount()
+                .map { Pair(it.key, it.value) }
+                .sortedByDescending { it.second }
+                .mapIndexed { idx, p -> p.first to orderIndices.size + idx}
+                .toMap()
+
+        for ((p, ch) in points) {
+            var colorIdx = orderIndices[ch]
+            if (colorIdx == null) {
+                colorIdx = otherIndices[ch]
+            }
+            if (colorIdx != null) {
+                result.add(ShowPoint(p, colorSchema(p, colorIdx), if (displayLabels) ch else null))
+            }
         }
+        showGraphicPoints(result, "")
     }
 
     fun showBodies(bodies: List<Iterable<Point>>) = showBodies(bodies.map { Body(it.toSet()) })
     fun showPoints(points: List<Point>, info: String = "") = showBodies(listOf(Body(points.toSet())), info)
 
     fun showBodies(bodies: List<Body>, info: String = "") {
+        val showPoints = bodies.flatMapIndexed { bodyIdx, body ->
+            body.points.map { ShowPoint(it, colorSchema(it, bodyIdx), null) }
+        }
+        showGraphicPoints(showPoints, info)
+    }
+
+    private fun showGraphicPoints(showPoints: List<ShowPoint>, info: String = "") {
         if (frame == null) {
             init()
         }
-        val showPoints = bodies.flatMapIndexed { bodyIdx, body ->
-            body.points.map { ShowPoint(it, colors[bodyIdx % colors.size]) }
-        }
         val snapshot = Snapshot(info, showPoints)
-        snapshots.add(snapshot)
-        snapshotIdx = snapshots.size - 1
+        if (rememberHistory) {
+            snapshots.add(snapshot)
+            snapshotIdx = snapshots.size - 1
+        }
         showSnapshot(snapshot)
         if (debugOn) {
             semaphore.acquire()
@@ -119,7 +141,48 @@ class Graphics(
 
 }
 
-private data class ShowPoint(val coords: Point, val color: Color)
+object ColorSchemas {
+
+    private val default_colors = listOf(
+        Color.BLUE, Color.GREEN, Color.ORANGE, Color.CYAN, Color.YELLOW, Color.MAGENTA,
+        Color.RED, Color.PINK, Color.GRAY, Color.BLACK
+    )
+
+    fun staticColors() = StaticColors(default_colors)::getColor
+    fun staticColors(colors: List<Color>) = StaticColors(colors)::getColor
+    fun heatMapColors(min: Int, max: Int, colors: List<Color>, outColor: Color) = HeatMapColors(min, max, colors, outColor)::getColor
+    fun heatMapColors(min: Int, max: Int) = HeatMapColors(min, max, listOf(Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED), Color.BLACK)::getColor
+
+
+    private class HeatMapColors(val min: Int, val max: Int, val colors: List<Color>, val outColor: Color) {
+        private val oneRange = (max - min).toFloat() / (colors.size - 1)
+
+        fun getColor(point: Point, value: Int): Color {
+            if (value < min || value > max) return outColor
+            if (max == value) return colors[colors.size - 1]
+            if (min == value) return colors[0]
+
+            val idx1 = ((value - min) / oneRange).toInt()
+            val c1 = colors[idx1]
+            val c2 = colors[idx1 + 1]
+            val ratio = (((value - min) % oneRange) / oneRange)
+            return Color(col(c1.red, c2.red, ratio), col(c1.green, c2.green, ratio), col(c1.blue, c2.blue, ratio), 255)
+        }
+
+        private fun col(first: Int, second: Int, ratio: Float): Int {
+            return (first + (second - first) * ratio).toInt()
+        }
+    }
+
+    private class StaticColors(val colors: List<Color>) {
+        fun getColor(point: Point, value: Int): Color {
+            return colors[value % colors.size]
+        }
+    }
+
+}
+
+private data class ShowPoint(val coords: Point, val color: Color, val label: Char?)
 
 private class Frame(surface: Surface) : JFrame() {
 
@@ -154,9 +217,11 @@ private class MyKeyAdapter(
 
 private class Surface(
     keyListener: KeyListener,
+    val circles: Boolean,
     val showEmpty: Boolean,
     val inverse: Boolean,
-    val minBoundingBox: Pair<Point, Point>?
+    val minBoundingBox: Pair<Point, Point>?,
+    val labelColor: Color
 ) : JPanel(),
     ActionListener {
 
@@ -164,6 +229,8 @@ private class Surface(
 
     private var points: List<ShowPoint> = listOf()
     private var pointSize = 10
+    private var myFont = font
+    private var fontMetrics = getFontMetrics(myFont)
     private var min = Point(0, 0)
     private var max = Point(0, 0)
 
@@ -198,6 +265,8 @@ private class Surface(
         val ratio = Point(width / size.x, height / size.y)
 
         pointSize = min(min(ratio.x, ratio.y), maxPointSize)
+        myFont = font.deriveFont(Font.PLAIN, pointSize * 0.7F)
+        fontMetrics = g.getFontMetrics(myFont);
 
         g2d.paint = Color.WHITE
         g2d.fillRect(tx(min.x), ty(min.y), tx(maxBound.x) - tx(min.x), ty(maxBound.y) - ty(min.y))
@@ -222,10 +291,27 @@ private class Surface(
         g.paint = p.color
         val x = tx(p.coords.x)
         val y = ty(p.coords.y)
-        g.fillOval(x, y, pointSize, pointSize)
+        if (circles) {
+            g.fillOval(x, y, pointSize, pointSize)
+        } else {
+            g.fillRect(x, y, pointSize, pointSize)
+        }
         if (pointSize > 8) {
             g.paint = Color.LIGHT_GRAY
-            g.drawOval(x, y, pointSize, pointSize)
+            if (circles) {
+                g.drawOval(x, y, pointSize, pointSize)
+            } else {
+                g.drawRect(x, y, pointSize, pointSize)
+            }
+        }
+
+        if (p.label != null && pointSize > 8) {
+            val label = p.label.toString()
+            g.paint = labelColor
+            val labelX: Int = x + (pointSize - fontMetrics.stringWidth(label)) / 2;
+            val labelY: Int = y + ((pointSize - fontMetrics.getHeight()) / 2) + fontMetrics.getAscent();
+            g.font = myFont;
+            g.drawString(label, labelX, labelY);
         }
     }
 

@@ -73,20 +73,20 @@ object Day16 {
             val tile = maze[p]
             when (tile) {
                 '/' -> when (dir) {
-                    Vector.UP, Vector.DOWN -> goTo(p, dir.turnRight())
-                    Vector.LEFT, Vector.RIGHT -> goTo(p, dir.turnLeft())
+                    Vector.UP, Vector.DOWN -> goTo(p, dir.right())
+                    Vector.LEFT, Vector.RIGHT -> goTo(p, dir.left())
                 }
                 '\\' -> when (dir) {
-                    Vector.UP, Vector.DOWN -> goTo(p, dir.turnLeft())
-                    Vector.LEFT, Vector.RIGHT -> goTo(p, dir.turnRight())
+                    Vector.UP, Vector.DOWN -> goTo(p, dir.left())
+                    Vector.LEFT, Vector.RIGHT -> goTo(p, dir.right())
                 }
                 '|' -> if (dir.x == 0) goTo(p, dir) else {
-                    goTo(p, dir.turnRight())
-                    goTo(p, dir.turnLeft())
+                    goTo(p, dir.right())
+                    goTo(p, dir.left())
                 }
                 '-' -> if (dir.y == 0) go(p.plus(dir), dir) else {
-                    goTo(p, dir.turnRight())
-                    goTo(p, dir.turnLeft())
+                    goTo(p, dir.right())
+                    goTo(p, dir.left())
                 }
                 null -> goTo(p, dir)
             }

@@ -1,5 +1,6 @@
 package cz.libors.util
 
+import java.util.PriorityQueue
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.max
@@ -157,8 +158,8 @@ data class Vector(val x: Int, val y: Int) {
     fun normalize(): Vector = gcd(x, y).absoluteValue
         .let { if (it == 0) this else Vector(x / it, y / it) }
 
-    fun turnLeft() = Vector(y, -x)
-    fun turnRight() = Vector(-y, x)
+    fun left() = Vector(y, -x)
+    fun right() = Vector(-y, x)
     fun negative() = Vector(-x, -y)
     operator fun times(factor: Int) = Vector(x * factor, y * factor)
     fun manhattanDistance() = abs(x) + abs(y)
@@ -264,4 +265,48 @@ fun debug() {
 
 fun debug(x: Any) {
     if (DEBUG_ON) println(x)
+}
+
+fun<K> shortestPath(start: K,
+                    endFn: (K) -> Boolean,
+                    distanceFn: (K, K) -> Int = { _, _ -> 1},
+                    neighboursFn: (K) -> Iterable<K>): ShortestPath<K> {
+    val queue = PriorityQueue(compareBy<ScoredNode<K>> { it.score })
+    val seen = mutableMapOf<K, PathToNode<K>>()
+    queue.add(ScoredNode(start, 0))
+    var endNode: K? = null
+    while (queue.isNotEmpty() && endNode == null) {
+        val (node, score) = queue.remove()
+        if (endFn(node)) {
+            endNode = node
+        }
+        val paths = neighboursFn(node)
+            .filter { !seen.containsKey(it) }
+            .map { ScoredNode(it, distanceFn(node, it) + score) }
+        queue.addAll(paths)
+        paths.forEach { seen[it.node] = PathToNode(node, it.score) }
+    }
+    return ShortestPath(start, seen, endNode)
+}
+
+private data class ScoredNode<K>(val node: K, val score: Int)
+data class PathToNode<K>(val from: K, val score: Int)
+
+class ShortestPath<K>(val start: K,
+                      private val paths: Map<K, PathToNode<K>>,
+                      val end: K?) {
+
+    fun getScore(): Int? {
+        return paths[end]?.score
+    }
+
+    fun getPath(): List<K> {
+        val result = mutableListOf<K>()
+        var x = end
+        while (x != null) {
+            result.add(x)
+            x = paths[x]?.from
+        }
+        return result.reversed()
+    }
 }
