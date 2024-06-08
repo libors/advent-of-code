@@ -1,9 +1,11 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToText
 import cz.libors.util.splitByEmptyLine
 import cz.libors.util.splitByNewLine
 
+@Day("Calorie Counting")
 object Day1 {
 
     private fun sumGroup(group: List<String>) = group.sumOf { num -> num.toInt() }

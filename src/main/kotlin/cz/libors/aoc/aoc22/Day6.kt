@@ -1,8 +1,10 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToText
 import java.util.*
 
+@Day(name = "Tuning Trouble")
 object Day6 {
 
     private fun distinctIndex(input: String, num: Int): Int {

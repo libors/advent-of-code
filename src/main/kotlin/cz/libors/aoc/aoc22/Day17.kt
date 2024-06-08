@@ -1,11 +1,13 @@
 package cz.libors.aoc.aoc22
 
 import cz.libors.util.Body
+import cz.libors.util.Day
 import cz.libors.util.Point
 import cz.libors.util.readToText
 
 private typealias Rock = Body
 
+@Day(name = "Pyroclastic Flow")
 object Day17 {
 
     private val brickArray = listOf(

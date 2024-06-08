@@ -1,7 +1,9 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 
+@Day(name = "Rucksack Reorganization")
 object Day3 {
 
     private fun commonChar(strings: List<CharSequence>) =

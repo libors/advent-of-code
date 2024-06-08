@@ -29,7 +29,8 @@ class Graphics(
     private val snapshots = mutableListOf<Snapshot>()
     private var snapshotIdx = 0
 
-    private var colors = listOf(Color.BLUE, Color.GREEN, Color.ORANGE, Color.CYAN, Color.YELLOW, Color.MAGENTA)
+    private var colors = listOf(Color.BLUE, Color.GREEN, Color.ORANGE, Color.CYAN, Color.YELLOW, Color.MAGENTA,
+        Color.RED, Color.PINK, Color.GRAY, Color.BLACK)
 
     init {
         val keyListener = MyKeyAdapter({ debugSwitch() }, { previous() }, { next() })
@@ -73,6 +74,24 @@ class Graphics(
         }
     }
 
+    fun showChars(points: Map<Point, Char>, order: String, showNotStated: Boolean = false) {
+        val charPoints = points.entries.groupBy({ it.value }, { it.key })
+        val bodies = order.toCharArray()
+            .map { (charPoints[it] ?: emptyList()) }
+            .map { Body(it.toSet()) }
+        if (showNotStated) {
+            val others = charPoints.filter { !order.contains(it.key) }.values
+                .sortedByDescending { it.size }
+                .map { Body(it.toSet()) }
+            showBodies(bodies + others)
+        } else {
+            showBodies(bodies)
+        }
+    }
+
+    fun showBodies(bodies: List<Iterable<Point>>) = showBodies(bodies.map { Body(it.toSet()) })
+    fun showPoints(points: List<Point>, info: String = "") = showBodies(listOf(Body(points.toSet())), info)
+
     fun showBodies(bodies: List<Body>, info: String = "") {
         if (frame == null) {
             init()
@@ -89,10 +108,6 @@ class Graphics(
         } else {
             Thread.sleep(delay)
         }
-    }
-
-    fun show(points: List<Point>, info: String = "") {
-        showBodies(listOf(Body(points.toSet())), info)
     }
 
     private fun showSnapshot(s: Snapshot) {

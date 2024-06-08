@@ -1,9 +1,11 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.debug
 import cz.libors.util.findInts
 import cz.libors.util.readToLines
 
+@Day(name = "Not Enough Minerals")
 object Day19 {
 
     private val OR = 0
@@ -48,6 +50,7 @@ object Day19 {
     var calls = 0
     var maxCosts = listOf<Int>()
     var costs = listOf<List<Int>>()
+
     fun dfs(robots: List<Int>, resources: List<Int>, time: Int, skipCreate: Boolean): Int {
         if (++calls % 1000000 == 0) debug(calls)
         if (time == 0) return resources[GE]

@@ -1,10 +1,12 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 import java.lang.IllegalArgumentException
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 
+@Day(name = "Full of Hot Air")
 object Day25 {
 
     private val reachableTable = reachableTable()

@@ -2,13 +2,11 @@
 
 package cz.libors.aoc.aoc22
 
-import cz.libors.util.Interval
-import cz.libors.util.Point
-import cz.libors.util.findInts
-import cz.libors.util.readToLines
-import java.lang.Integer.max
+import cz.libors.util.*
 import kotlin.math.abs
+import kotlin.math.max
 
+@Day(name = "Beacon Exclusion Zone")
 object Day15 {
 
     private fun task1(sensors: List<Sensor>, occupied: Set<Point>, row: Int): Int {
@@ -17,13 +15,13 @@ object Day15 {
         val toRange = occupied.maxOf { it.x } + sensors.maxOf { it.reach }
         for (i in fromRange..toRange) {
             val p = Point(i, row)
-            if (!occupied.contains(p) && sensors.find { it.inReach(p) } != null)
+            if (!occupied.contains(p) && sensors.any { it.inReach(p) })
                 count++
         }
         return count
     }
 
-    private fun task2(sensors: List<Sensor>, maxBound: Int): Long {
+    private fun task2(sensors: List<Sensor>, maxBound: Long): Long {
         for (y in 0..maxBound) {
             val coveredRanges = sensors.map { it.xRange(y) }.filter { !it.isEmpty() }
             val hole = findHole(Interval(0, maxBound), coveredRanges)
@@ -34,7 +32,7 @@ object Day15 {
         throw RuntimeException()
     }
 
-    private fun findHole(interval: Interval, ranges: List<Interval>): Int? {
+    private fun findHole(interval: Interval, ranges: List<Interval>): Long? {
         val sorted = ranges.sortedBy { it.from }
         if (sorted[0].from > interval.from)
             return interval.from
@@ -65,7 +63,7 @@ object Day15 {
 
     data class Sensor(val p: Point, val reach: Int) {
         fun inReach(other: Point) = p.manhattanDistance(other) <= reach
-        fun xRange(y: Int): Interval {
+        fun xRange(y: Long): Interval {
             val yReach = reach - abs(y - this.p.y)
             return if (yReach < 0) Interval.EMPTY else Interval(p.x - yReach, p.x + yReach)
         }

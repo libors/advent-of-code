@@ -14,6 +14,7 @@ repositories {
 dependencies {
 
     implementation("com.googlecode.json-simple:json-simple:1.1.1")
+    implementation("org.jgrapht:jgrapht-core:1.5.2")
 
     testImplementation(kotlin("test"))
 }

@@ -1,12 +1,16 @@
 package cz.libors.util
 
-import java.lang.Integer.max
-import java.lang.Integer.min
 import kotlin.math.abs
 import kotlin.math.absoluteValue
+import kotlin.math.max
+import kotlin.math.min
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Day(val name: String)
 
 private fun resolveResourcePath(x: String): String {
-    val traceLine = Thread.currentThread().stackTrace.first { it.className.contains("aoc.aoc")}
+    val traceLine = Thread.currentThread().stackTrace.first { it.className.contains("aoc.aoc") }
     val year = traceLine.className.findPositiveInts()[0]
     return "$year/$x"
 }
@@ -21,9 +25,23 @@ fun readToText(name: String): String =
         return it.reader().readText()
     }
 
+fun List<String>.toPointsWithValue() = this.flatMapIndexed { lineIdx, line ->
+    line.mapIndexed { rowIdx, row -> Point(rowIdx, lineIdx) to row }
+}
+
 fun String.findInts(): List<Int> = Regex("-?[0-9]+")
     .findAll(this)
     .map { it.value.toInt() }
+    .toList()
+
+fun String.findLongs(): List<Long> = Regex("-?[0-9]+")
+    .findAll(this)
+    .map { it.value.toLong() }
+    .toList()
+
+fun String.findAlphanums(): List<String> = Regex("[0-9a-zA-Z]+")
+    .findAll(this)
+    .map { it.value }
     .toList()
 
 fun String.findPositiveInts(): List<Int> = Regex("[0-9]+")
@@ -64,6 +82,17 @@ data class Point(val x: Int, val y: Int) {
     fun adjacentPoints(): List<Point> = listOf(add(Vector.UP), add(Vector.DOWN), add(Vector.LEFT), add(Vector.RIGHT))
     fun diagonalPoints(): List<Point> =
         listOf(add(Vector(1, 1)), add(Vector(1, -1)), add(Vector(-1, 1)), add(Vector(-1, -1)))
+    fun touchingPoints(): List<Point> = adjacentPoints() + diagonalPoints();
+
+    fun series(direction: Vector, points: Set<Point>): List<Point> {
+        val result = mutableListOf(this)
+        var p = this.plus(direction)
+        while (points.contains(p)) {
+            result.add(p)
+            p = p.plus(direction)
+        }
+        return result;
+    }
 
     override fun toString() = "[$x, $y]"
 
@@ -74,10 +103,13 @@ fun Iterable<Point>.boundingBox() = Pair(
     Point(maxOf { it.x }, maxOf { it.y })
 )
 
+fun Pair<Point, Point>.contains(p: Point) =
+    this.first.x <= p.x && this.first.y <= p.y && this.second.x >= p.x && this.second.y >= p.y
+
 fun Pair<Point, Point>.invert(points: Set<Point>): Set<Point> {
     val result = mutableSetOf<Point>()
-    for (x in this.first.x .. this.second.x)
-        for (y in this.first.y .. this.second.y) {
+    for (x in this.first.x..this.second.x)
+        for (y in this.first.y..this.second.y) {
             val p = Point(x, y)
             if (!points.contains(p)) result.add(p)
         }
@@ -119,18 +151,30 @@ data class Vector(val x: Int, val y: Int) {
             "west", "left", "l", "<" -> LEFT
             else -> null
         }
+
     }
 
     fun normalize(): Vector = gcd(x, y).absoluteValue
         .let { if (it == 0) this else Vector(x / it, y / it) }
 
+    fun turnLeft() = Vector(y, -x)
+    fun turnRight() = Vector(-y, x)
     fun negative() = Vector(-x, -y)
     operator fun times(factor: Int) = Vector(x * factor, y * factor)
     fun manhattanDistance() = abs(x) + abs(y)
 }
 
-data class Vector3(val x: Int, val y: Int, val z: Int)
+data class Vector3(val x: Int, val y: Int, val z: Int) {
+    fun normalize(): Vector3 = gcd(z, gcd(x, y)).absoluteValue
+        .let { if (it == 0) this else Vector3(x / it, y / it, z/ it) }
+}
+
 data class Point3(val x: Int, val y: Int, val z: Int) {
+
+    companion object {
+
+    }
+
     fun adjacent() = listOf(
         Point3(x, y, z + 1),
         Point3(x, y, z - 1),
@@ -141,6 +185,9 @@ data class Point3(val x: Int, val y: Int, val z: Int) {
     )
 
     operator fun plus(v: Vector3) = Point3(x + v.x, y + v.y, z + v.z)
+    operator fun minus(v: Vector3) = Point3(x - v.x, y - v.y, z - v.z)
+
+    fun toVector() = Vector3(x, y, z)
 
     fun inRect(min: Point3, max: Point3) =
         x in min.x..max.x && y in min.y..max.y && z in min.z..max.z
@@ -151,7 +198,37 @@ fun Iterable<Point3>.boundingBox3() = Pair(
     Point3(maxOf { it.x }, maxOf { it.y }, maxOf { it.z })
 )
 
-data class Interval(val from: Int, val to: Int) {
+fun flood(start: Point, points: Set<Point>): Set<Point> {
+    val result = mutableSetOf(start)
+    val queue = mutableListOf(start)
+    while (queue.isNotEmpty()) {
+        queue.removeLast().adjacentPoints().filter { points.contains(it) && !result.contains(it) }
+            .forEach {
+                result.add(it)
+                queue.add(it)
+            }
+    }
+    return result
+}
+
+fun findSingleTrack(end: Point, start: Point, points: Map<Point, Char>):Pair<Point, Int>? {
+    val special = points[end]!!
+    val result = mutableSetOf<Point>()
+    val queue = mutableListOf(start)
+    while (queue.isNotEmpty()) {
+        val item = queue.removeLast()
+        if (points[item] == special) return Pair(item, result.size + 1)
+        if (!result.contains(item)) {
+            result.add(item)
+            item.adjacentPoints()
+                .filter { points.contains(it) && !result.contains(it) && end != it }
+                .forEach { queue.add(it) }
+        }
+    }
+    return null
+}
+
+data class Interval(val from: Long, val to: Long) {
     fun isSubOf(other: Interval) = from >= other.from && to <= other.to
     fun contains(other: Interval) = other.isSubOf(this)
     fun overlaps(other: Interval) = from <= other.to && other.from <= to
@@ -164,7 +241,7 @@ data class Interval(val from: Int, val to: Int) {
 
     companion object {
         val EMPTY: Interval = Interval(1, 0)
-        fun from(x: Int, y: Int) = if (x <= y) Interval(x, y) else Interval(y, x)
+        fun from(x: Long, y: Long) = if (x <= y) Interval(x, y) else Interval(y, x)
     }
 }
 

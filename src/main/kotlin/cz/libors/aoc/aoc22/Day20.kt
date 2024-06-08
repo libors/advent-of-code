@@ -1,7 +1,9 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 
+@Day(name = "Grove Positioning System")
 object Day20 {
 
     private fun task1(input: List<Pair<Long, Int>>): Long {

@@ -1,8 +1,10 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToText
 import cz.libors.util.splitByNewLine
 
+@Day(name = "No Space Left On Device")
 object Day7 {
 
     private fun runCommands(input: List<List<String>>): List<FSItem> {
@@ -47,22 +49,20 @@ object Day7 {
         private var current = root
         private val path = mutableListOf<FSItem>()
 
-        fun goto(name: String) {
-            if (name == "/") {
+        fun goto(name: String) = when(name) {
+            "/" -> {
                 path.clear()
                 current = root
-            } else if (name == "..") {
-                current = path.removeLast()
-            } else {
+                }
+            ".." -> current = path.removeLast()
+            else -> {
                 path.add(current)
                 current = current.goto(name)
             }
         }
 
         fun updateDir(what: List<List<String>>) = what.forEach { current.add(it) }
-
         fun getAll(): List<FSItem> = root.list()
-
     }
 
     data class FSItem(val name: String, val size: Int) {

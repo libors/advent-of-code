@@ -1,7 +1,9 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 
+@Day(name = "Rock Paper Scissors")
 object Day2 {
 
     enum class Hand(val idx: Int, val score: Array<Int>) {

@@ -1,5 +1,6 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.debug
 import cz.libors.util.findInts
 import cz.libors.util.readToLines
@@ -8,6 +9,7 @@ import kotlin.collections.HashMap
 
 private typealias OpenSet = Int
 
+@Day(name = "Proboscidea Volcanium")
 object Day16 {
 
     private var everythingOpen: OpenSet = 0
@@ -41,18 +43,18 @@ object Day16 {
             val output = out.split(", ").map { x -> x.trim() }
             Triple(words[1], it.findInts()[0], output)
         }
-        val tuplesWithAddintionalInfo = valveTuples
+        val tuplesWithAdditionalInfo = valveTuples
             .sortedWith { x, y -> y.second - x.second }
             .mapIndexed { idx, it -> it to Pair(mutableListOf<Valve>(), idx) }
 
-        val valves = tuplesWithAddintionalInfo.map {
+        val valves = tuplesWithAdditionalInfo.map {
             val rate = it.first.second
             val opener = if (rate == 0) 0 else 1 shl it.second.second
             Valve(opener, it.first.first, it.first.second, it.second.first)
         }
         val valveByName = valves.associateBy { it.name }
 
-        tuplesWithAddintionalInfo.forEach {
+        tuplesWithAdditionalInfo.forEach {
             it.first.third.forEach { vName -> it.second.first.add(valveByName[vName]!!) }
         }
 
@@ -74,7 +76,7 @@ object Day16 {
         queue.add(QueRec(Pos(startValve, startValve), 0, 26, 0))
         var maxScore = 0
         val start = System.currentTimeMillis()
-        while (!queue.isEmpty()) {
+        while (queue.isNotEmpty()) {
             val x = queue.poll()
             if (++positions % 10000000 == 0L) {
                 debug()

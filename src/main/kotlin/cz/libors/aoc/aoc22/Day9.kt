@@ -1,8 +1,10 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 import kotlin.math.abs
 
+@Day(name = "Rope Bridge")
 object Day9 {
 
     private fun solve(moves: List<Move>, ropeLength: Int): Int {

@@ -1,8 +1,10 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 import java.util.*
 
+@Day(name = "Hill Climbing Algorithm")
 object Day12 {
     private const val START = 'S' - 'a'
     private const val END = 'E' - 'a'

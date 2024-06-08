@@ -2,6 +2,7 @@ package cz.libors.aoc.aoc22
 
 import cz.libors.util.*
 
+@Day(name = "Monkey Map")
 object Day22 {
 
     private val directions = listOf(Vector.UP, Vector.RIGHT, Vector.DOWN, Vector.LEFT)

@@ -1,8 +1,10 @@
 package cz.libors.aoc.aoc22
 
 import cz.libors.util.BinOperation
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 
+@Day(name = "Monkey Math")
 object Day21 {
 
     private fun task1(monkeys: Map<String, Monkey>) = monkeys["root"]!!.evaluate(monkeys)

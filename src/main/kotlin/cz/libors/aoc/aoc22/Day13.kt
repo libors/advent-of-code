@@ -1,11 +1,13 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToText
 import cz.libors.util.splitByEmptyLine
 import cz.libors.util.splitByNewLine
 import org.json.simple.parser.JSONParser
 import java.lang.Integer.min
 
+@Day(name = "Distress Signal")
 object Day13 {
 
     private fun task1(data: List<List<List<*>>>) =

@@ -4,6 +4,7 @@ import cz.libors.util.*
 import java.lang.Integer.max
 import java.lang.Integer.min
 
+@Day(name = "Regolith Reservoir")
 object Day14 {
     private val START = Point(500, 0)
 

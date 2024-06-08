@@ -1,13 +1,11 @@
 package cz.libors.aoc.aoc22
 
-import cz.libors.util.Point
-import cz.libors.util.Vector
-import cz.libors.util.boundingBox
-import cz.libors.util.readToLines
+import cz.libors.util.*
 
+@Day(name = "Unstable Diffusion")
 object Day23 {
 
-    val rules = listOf(
+    private val rules = listOf(
         Decision(listOf(Vector.UP, Vector.RIGHT_UP, Vector.LEFT_UP), Vector.UP),
         Decision(listOf(Vector.DOWN, Vector.RIGHT_DOWN, Vector.LEFT_DOWN), Vector.DOWN),
         Decision(listOf(Vector.LEFT, Vector.LEFT_UP, Vector.LEFT_DOWN), Vector.LEFT),
@@ -17,7 +15,7 @@ object Day23 {
     @JvmStatic
     fun main(args: Array<String>) {
         val elves = readToLines("input23.txt")
-            .flatMapIndexed { rowIdx, row -> row.mapIndexed { colIdx, char -> Point(colIdx, rowIdx) to char } }
+            .toPointsWithValue()
             .filter { it.second == '#' }
             .map { it.first }
             .toSet()
@@ -66,7 +64,7 @@ object Day23 {
         return current
     }
 
-    data class Decision(val ifFree: List<Vector>, val thenSuggest: Vector) {
+    private data class Decision(val ifFree: List<Vector>, val thenSuggest: Vector) {
         fun tryIt(current: Point, elves: Set<Point>): Point = if (ifFree.all { !elves.contains(current + it) })
             current + thenSuggest else current
     }

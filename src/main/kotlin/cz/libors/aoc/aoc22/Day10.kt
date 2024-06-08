@@ -1,7 +1,9 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 
+@Day(name = "Cathode-Ray Tube")
 object Day10 {
 
     private fun runInstructions(input: List<String>): List<Int> {

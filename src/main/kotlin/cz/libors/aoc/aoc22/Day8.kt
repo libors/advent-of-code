@@ -1,9 +1,11 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.readToLines
 
 private typealias Tree = Pair<Int, Int>
 
+@Day(name = "Treetop Tree House")
 object Day8 {
 
     private fun visibleFromGround(sizes: List<Int>): List<Int> {

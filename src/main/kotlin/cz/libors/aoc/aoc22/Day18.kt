@@ -2,6 +2,7 @@ package cz.libors.aoc.aoc22
 
 import cz.libors.util.*
 
+@Day(name = "Boiling Boulders")
 object Day18 {
 
     private fun task1(points: Set<Point3>) = points

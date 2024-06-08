@@ -1,13 +1,16 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.Interval
 import cz.libors.util.findPositiveInts
 import cz.libors.util.readToLines
 
+@Day(name = "Camp Cleanup")
 object Day4 {
 
     private fun toIntervals(s: String) = s
         .findPositiveInts()
+        .map { it.toLong() }
         .let { listOf(Interval(it[0], it[1]), Interval(it[2], it[3])) }
 
     private fun task1(intervals: List<List<Interval>>) = intervals

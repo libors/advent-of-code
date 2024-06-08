@@ -1,10 +1,12 @@
 package cz.libors.aoc.aoc22
 
+import cz.libors.util.Day
 import cz.libors.util.findInts
 import cz.libors.util.readToLines
 import java.util.*
 import kotlin.collections.HashMap
 
+@Day(name = "Supply Stacks")
 object Day5 {
 
     private fun perform(data: List<String>, keepOrder: Boolean): Stacks {
@@ -50,7 +52,7 @@ object Day5 {
 
         fun top(): String =
             stacks
-                .filter { !it.value.isEmpty() }
+                .filter { it.value.isNotEmpty() }
                 .map { s -> Pair(s.key, s.value.last) }
                 .sortedBy { it.first }
                 .map { it.second }

@@ -1,10 +1,8 @@
 package cz.libors.aoc.aoc22
 
-import cz.libors.util.findInts
-import cz.libors.util.readToText
-import cz.libors.util.splitByEmptyLine
-import cz.libors.util.splitByNewLine
+import cz.libors.util.*
 
+@Day(name = "Monkey in the Middle")
 object Day11 {
 
     private fun task1(monkeys: List<Monkey>) = doRounds(monkeys, 20) { it / 3 }

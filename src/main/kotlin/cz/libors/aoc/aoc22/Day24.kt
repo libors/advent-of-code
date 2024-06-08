@@ -1,12 +1,10 @@
 package cz.libors.aoc.aoc22
 
-import cz.libors.util.Point
-import cz.libors.util.Vector
-import cz.libors.util.posMod
-import cz.libors.util.readToLines
+import cz.libors.util.*
 import java.lang.IllegalArgumentException
 import java.util.LinkedList
 
+@Day(name = "Blizzard Basin")
 object Day24 {
 
     @JvmStatic
