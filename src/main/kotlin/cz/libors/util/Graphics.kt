@@ -82,10 +82,10 @@ class Graphics(
         showGraphicPoints(showPoints, "")
     }
 
-    fun showChars(points: Map<Point, Char>, order: String, showNotStated: Boolean = false) {
+    fun showChars(points: Map<Point, Char>, order: String = "", showNotStated: Boolean = false) {
         val result = mutableListOf<ShowPoint>()
         val orderIndices = order.toCharArray().mapIndexed { idx, ch -> ch to idx }.toMap()
-        val otherIndices = if (!showNotStated) mapOf() else
+        val otherIndices = if (!showNotStated && order.isNotEmpty()) mapOf() else
             points.filter { it.value !in orderIndices }
                 .map { it.value }.groupingBy { it }.eachCount()
                 .map { Pair(it.key, it.value) }
@@ -148,6 +148,8 @@ object ColorSchemas {
         Color.RED, Color.PINK, Color.GRAY, Color.BLACK
     )
 
+    fun white() = StaticColors(listOf(Color.WHITE))::getColor
+    fun specials() = StaticColors(listOf(Color.WHITE) + List(10) {Color.YELLOW})::getColor
     fun staticColors() = StaticColors(default_colors)::getColor
     fun staticColors(colors: List<Color>) = StaticColors(colors)::getColor
     fun heatMapColors(min: Int, max: Int, colors: List<Color>, outColor: Color) = HeatMapColors(min, max, colors, outColor)::getColor

@@ -24,7 +24,7 @@ object Day21 {
     }
 
     private fun task2(input: Map<Point, Char>): Int {
-        val size = input.keys.boundingBox().second.plus(Vector.RIGHT_DOWN)
+        val size = input.keys.boundingBox().second + Vector.RIGHT_DOWN
         var positions = listOf(input.entries.first { it.value == 'S' }.key)
         var prev = 0
         val counts = mutableMapOf<Int, Int>()

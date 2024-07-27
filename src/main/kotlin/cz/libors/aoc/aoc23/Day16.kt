@@ -61,7 +61,7 @@ object Day16 {
         }
 
         private fun goTo(p: Point, dir: Vector) {
-            queue.add(Pair(p.plus(dir), dir))
+            queue.add(Pair(p + dir, dir))
         }
 
         fun gox(p: Point, dir: Vector) {
@@ -73,20 +73,20 @@ object Day16 {
             val tile = maze[p]
             when (tile) {
                 '/' -> when (dir) {
-                    Vector.UP, Vector.DOWN -> goTo(p, dir.right())
-                    Vector.LEFT, Vector.RIGHT -> goTo(p, dir.left())
+                    Vector.UP, Vector.DOWN -> goTo(p, dir.turnRight())
+                    Vector.LEFT, Vector.RIGHT -> goTo(p, dir.turnLeft())
                 }
                 '\\' -> when (dir) {
-                    Vector.UP, Vector.DOWN -> goTo(p, dir.left())
-                    Vector.LEFT, Vector.RIGHT -> goTo(p, dir.right())
+                    Vector.UP, Vector.DOWN -> goTo(p, dir.turnLeft())
+                    Vector.LEFT, Vector.RIGHT -> goTo(p, dir.turnRight())
                 }
                 '|' -> if (dir.x == 0) goTo(p, dir) else {
-                    goTo(p, dir.right())
-                    goTo(p, dir.left())
+                    goTo(p, dir.turnRight())
+                    goTo(p, dir.turnLeft())
                 }
-                '-' -> if (dir.y == 0) go(p.plus(dir), dir) else {
-                    goTo(p, dir.right())
-                    goTo(p, dir.left())
+                '-' -> if (dir.y == 0) go(p + dir, dir) else {
+                    goTo(p, dir.turnRight())
+                    goTo(p, dir.turnLeft())
                 }
                 null -> goTo(p, dir)
             }

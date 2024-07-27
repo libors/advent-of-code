@@ -13,15 +13,7 @@ object Day18 {
         val (min, max) = points.boundingBox3().let {
             Pair(it.first + Vector3(-1, -1, -1), it.second + Vector3(1, 1, 1))
         }
-        val air = mutableSetOf(min)
-        val queue = mutableListOf(min)
-        while (queue.isNotEmpty())
-            queue.removeLast().adjacent()
-                .filter { it.inRect(min, max) && !air.contains(it) && !points.contains(it) }
-                .forEach {
-                    air.add(it)
-                    queue.add(it)
-                }
+        val air = flood(min) { it.adjacent().filter { x -> x.inRect(min, max) && !points.contains(x) } }
         return points.sumOf { it.adjacent().count { a -> air.contains(a) } }
     }
 

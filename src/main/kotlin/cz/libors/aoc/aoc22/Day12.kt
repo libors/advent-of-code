@@ -1,8 +1,8 @@
 package cz.libors.aoc.aoc22
 
 import cz.libors.util.Day
+import cz.libors.util.bfs
 import cz.libors.util.readToLines
-import java.util.*
 
 @Day(name = "Hill Climbing Algorithm")
 object Day12 {
@@ -37,24 +37,8 @@ object Day12 {
         }
     }
 
-    private fun findPath(land: List<List<Int>>, start: Coords, end: Coords): Int {
-        val visited = mutableSetOf<Coords>()
-        val queue: Deque<State> = LinkedList()
-        queue.addLast(State(start, 0))
-        visited.add(start)
-        do {
-            if (queue.isEmpty()) return Int.MAX_VALUE
-            val state = queue.removeFirst()
-            if (state.coords == end)
-                return state.length
-            for (coord in generatePath(state.coords, land)) {
-                if (!visited.contains(coord)) {
-                    queue.addLast(State(coord, state.length + 1))
-                    visited.add(coord)
-                }
-            }
-        } while (true)
-    }
+    private fun findPath(land: List<List<Int>>, start: Coords, end: Coords) =
+        bfs(start, { it == end }, { generatePath(it, land) }).getScore() ?: Int.MAX_VALUE
 
     private fun generatePath(coords: Coords, land: List<List<Int>>): List<Coords> {
         val result = mutableListOf<Coords>()
@@ -89,5 +73,4 @@ object Day12 {
     }
 
     data class Coords(val col: Int, val row: Int)
-    data class State(val coords: Coords, val length: Int)
 }

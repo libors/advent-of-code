@@ -16,7 +16,7 @@ object Day17 {
 
     private fun task1(input: Map<Point, Int>): Int {
         val box = input.keys.boundingBox()
-        return shortestPath(
+        return dijkstra(
             Position(box.first, Vector.RIGHT, 0),
             { it.p == box.second },
             { _, b -> input[b.p]!! },
@@ -25,7 +25,7 @@ object Day17 {
 
     private fun task2(input: Map<Point, Int>): Int {
         val box = input.keys.boundingBox()
-        return shortestPath(
+        return dijkstra(
             Position(box.first, Vector.RIGHT, 0),
             { it.p == box.second && it.dirMoves >= 4 },
             { _, b -> input[b.p]!! },
@@ -37,11 +37,11 @@ object Day17 {
         if (pos.dirMoves < 3) {
             moves.add(Position(pos.p + pos.dir, pos.dir, pos.dirMoves + 1))
         }
-        val right = pos.dir.right()
+        val right = pos.dir.turnRight()
         moves.add(Position(pos.p + right, right, 1))
-        val left = pos.dir.left()
+        val left = pos.dir.turnLeft()
         moves.add(Position(pos.p + left, left, 1))
-        return moves;
+        return moves
     }
 
     private fun neighbours2(pos: Position): Iterable<Position> {
@@ -50,9 +50,9 @@ object Day17 {
             moves.add(Position(pos.p + pos.dir, pos.dir, pos.dirMoves + 1))
         }
         if ((pos.dirMoves >= 4 || pos.dirMoves == 0)) {
-            val right = pos.dir.right()
+            val right = pos.dir.turnRight()
             moves.add(Position(pos.p + right, right, 1))
-            val left = pos.dir.left()
+            val left = pos.dir.turnLeft()
             moves.add(Position(pos.p + left, left, 1))
         }
         return moves

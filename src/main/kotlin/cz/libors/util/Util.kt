@@ -1,6 +1,6 @@
 package cz.libors.util
 
-import java.util.PriorityQueue
+import java.util.*
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.max
@@ -9,6 +9,12 @@ import kotlin.math.min
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Day(val name: String)
+
+typealias IntSet = Int
+
+fun IntSet.set(i: Int): IntSet = this or (1 shl i)
+fun IntSet.isSet(i: Int): Boolean = (this and (1 shl i)) != 0
+fun IntSet.isNotSet(i: Int): Boolean = (this and (1 shl i)) == 0
 
 private fun resolveResourcePath(x: String): String {
     val traceLine = Thread.currentThread().stackTrace.first { it.className.contains("aoc.aoc") }
@@ -50,6 +56,14 @@ fun String.findPositiveInts(): List<Int> = Regex("[0-9]+")
     .map { it.value.toInt() }
     .toList()
 
+fun String.take(start: Int, every: Int): List<Char> {
+    val result = mutableListOf<Char>()
+    for (i in start until this.length step every) {
+        result.add(this[i])
+    }
+    return result
+}
+
 fun String.splitByEmptyLine(): List<String> = this.split(Regex("\r?\n\r?\n"))
 fun String.splitByNewLine(): List<String> = this.split(Regex("\r?\n"))
 
@@ -77,12 +91,18 @@ data class Point(val x: Int, val y: Int) {
     operator fun plus(other: Vector) = this.add(other)
     operator fun minus(other: Vector) = this.add(other.negative())
 
+    fun right() = this + Vector.RIGHT
+    fun left() = this + Vector.LEFT
+    fun up() = this + Vector.UP
+    fun down() = this + Vector.DOWN
+
     fun add(other: Vector) = Point(x + other.x, y + other.y)
     fun vectorTo(other: Point) = Vector(other.x - x, other.y - y)
     fun switch() = Point(y, x)
     fun adjacentPoints(): List<Point> = listOf(add(Vector.UP), add(Vector.DOWN), add(Vector.LEFT), add(Vector.RIGHT))
     fun diagonalPoints(): List<Point> =
         listOf(add(Vector(1, 1)), add(Vector(1, -1)), add(Vector(-1, 1)), add(Vector(-1, -1)))
+
     fun touchingPoints(): List<Point> = adjacentPoints() + diagonalPoints();
 
     fun series(direction: Vector, points: Set<Point>): List<Point> {
@@ -99,13 +119,17 @@ data class Point(val x: Int, val y: Int) {
 
 }
 
-fun Iterable<Point>.boundingBox() = Pair(
+typealias Box = Pair<Point, Point>
+
+fun Iterable<Point>.boundingBox() = Box(
     Point(minOf { it.x }, minOf { it.y }),
     Point(maxOf { it.x }, maxOf { it.y })
 )
 
-fun Pair<Point, Point>.contains(p: Point) =
+fun Box.contains(p: Point) =
     this.first.x <= p.x && this.first.y <= p.y && this.second.x >= p.x && this.second.y >= p.y
+
+fun Box.center() = Point((this.first.x + this.second.x) / 2, (this.first.y + this.second.y) / 2)
 
 fun Pair<Point, Point>.invert(points: Set<Point>): Set<Point> {
     val result = mutableSetOf<Point>()
@@ -158,8 +182,8 @@ data class Vector(val x: Int, val y: Int) {
     fun normalize(): Vector = gcd(x, y).absoluteValue
         .let { if (it == 0) this else Vector(x / it, y / it) }
 
-    fun left() = Vector(y, -x)
-    fun right() = Vector(-y, x)
+    fun turnLeft() = Vector(y, -x)
+    fun turnRight() = Vector(-y, x)
     fun negative() = Vector(-x, -y)
     operator fun times(factor: Int) = Vector(x * factor, y * factor)
     fun manhattanDistance() = abs(x) + abs(y)
@@ -167,7 +191,7 @@ data class Vector(val x: Int, val y: Int) {
 
 data class Vector3(val x: Int, val y: Int, val z: Int) {
     fun normalize(): Vector3 = gcd(z, gcd(x, y)).absoluteValue
-        .let { if (it == 0) this else Vector3(x / it, y / it, z/ it) }
+        .let { if (it == 0) this else Vector3(x / it, y / it, z / it) }
 }
 
 data class Point3(val x: Int, val y: Int, val z: Int) {
@@ -199,34 +223,19 @@ fun Iterable<Point3>.boundingBox3() = Pair(
     Point3(maxOf { it.x }, maxOf { it.y }, maxOf { it.z })
 )
 
-fun flood(start: Point, points: Set<Point>): Set<Point> {
+fun <K> flood(start: K, neighborsFn: (K) -> Iterable<K>): Set<K> {
     val result = mutableSetOf(start)
-    val queue = mutableListOf(start)
+    val queue = LinkedList<K>()
+    queue.add(start)
     while (queue.isNotEmpty()) {
-        queue.removeLast().adjacentPoints().filter { points.contains(it) && !result.contains(it) }
+        neighborsFn(queue.removeLast())
+            .filter { !result.contains(it) }
             .forEach {
                 result.add(it)
-                queue.add(it)
+                queue.addLast(it)
             }
     }
     return result
-}
-
-fun findSingleTrack(end: Point, start: Point, points: Map<Point, Char>):Pair<Point, Int>? {
-    val special = points[end]!!
-    val result = mutableSetOf<Point>()
-    val queue = mutableListOf(start)
-    while (queue.isNotEmpty()) {
-        val item = queue.removeLast()
-        if (points[item] == special) return Pair(item, result.size + 1)
-        if (!result.contains(item)) {
-            result.add(item)
-            item.adjacentPoints()
-                .filter { points.contains(it) && !result.contains(it) && end != it }
-                .forEach { queue.add(it) }
-        }
-    }
-    return null
 }
 
 data class Interval(val from: Long, val to: Long) {
@@ -267,24 +276,74 @@ fun debug(x: Any) {
     if (DEBUG_ON) println(x)
 }
 
-fun<K> shortestPath(start: K,
-                    endFn: (K) -> Boolean,
-                    distanceFn: (K, K) -> Int = { _, _ -> 1},
-                    neighboursFn: (K) -> Iterable<K>): ShortestPath<K> {
+
+fun warshall(nodes: Int, distFn: (Int) -> Map<Int, Int>): Array<IntArray> {
+    val matrix = Array(nodes) { IntArray(nodes) { Int.MAX_VALUE } }
+    for (i in 0 until nodes) {
+        matrix[i][i] = 0
+    }
+    for (n in 0 until nodes) {
+        for ((target, distToTarget) in distFn(n)) {
+            matrix[n][target] = distToTarget
+        }
+    }
+    for (thru in 0 until nodes)
+        for (source in 0 until nodes)
+            for (dest in 0 until nodes) {
+                val toThru = matrix[source][thru]
+                val fromThru = matrix[thru][dest]
+                val toDest = matrix[source][dest]
+                if (toThru != Int.MAX_VALUE && fromThru != Int.MAX_VALUE && toThru + fromThru < toDest)
+                    matrix[source][dest] = toThru + fromThru
+            }
+    return matrix
+}
+
+fun <K> dijkstra(
+    start: K,
+    endFn: (K) -> Boolean,
+    distanceFn: (K, K) -> Int = { _, _ -> 1 },
+    neighboursFn: (K) -> Iterable<K>
+): ShortestPath<K> {
     val queue = PriorityQueue(compareBy<ScoredNode<K>> { it.score })
     val seen = mutableMapOf<K, PathToNode<K>>()
+    seen[start] = PathToNode(start, 0)
     queue.add(ScoredNode(start, 0))
     var endNode: K? = null
     while (queue.isNotEmpty() && endNode == null) {
         val (node, score) = queue.remove()
-        if (endFn(node)) {
-            endNode = node
+        if (endFn(node)) endNode = node
+        for (neighbour in neighboursFn(node)) {
+            if (!seen.containsKey(neighbour)) {
+                val scoredNode = ScoredNode(neighbour, distanceFn(node, neighbour) + score)
+                queue.add(scoredNode)
+                seen[scoredNode.node] = PathToNode(node, scoredNode.score)
+            }
         }
-        val paths = neighboursFn(node)
-            .filter { !seen.containsKey(it) }
-            .map { ScoredNode(it, distanceFn(node, it) + score) }
-        queue.addAll(paths)
-        paths.forEach { seen[it.node] = PathToNode(node, it.score) }
+    }
+    return ShortestPath(start, seen, endNode)
+}
+
+fun <K> bfs(
+    start: K,
+    endFn: (K) -> Boolean,
+    neighboursFn: (K) -> Iterable<K>
+): ShortestPath<K> {
+    val queue = LinkedList<ScoredNode<K>>()
+    val seen = mutableMapOf<K, PathToNode<K>>()
+    seen[start] = PathToNode(start, 0)
+    queue.add(ScoredNode(start, 0))
+    var endNode: K? = null
+    while (queue.isNotEmpty() && endNode == null) {
+        val (node, score) = queue.removeFirst()
+        if (endFn(node)) endNode = node
+        for (neighbour in neighboursFn(node)) {
+            if (!seen.containsKey(neighbour)) {
+                val scoredNode = ScoredNode(neighbour, 1 + score)
+                queue.add(scoredNode)
+                seen[scoredNode.node] = PathToNode(node, scoredNode.score)
+            }
+        }
     }
     return ShortestPath(start, seen, endNode)
 }
@@ -292,9 +351,11 @@ fun<K> shortestPath(start: K,
 private data class ScoredNode<K>(val node: K, val score: Int)
 data class PathToNode<K>(val from: K, val score: Int)
 
-class ShortestPath<K>(val start: K,
-                      private val paths: Map<K, PathToNode<K>>,
-                      val end: K?) {
+class ShortestPath<K>(
+    val start: K,
+    private val paths: Map<K, PathToNode<K>>,
+    val end: K?
+) {
 
     fun getScore(): Int? {
         return paths[end]?.score
@@ -303,10 +364,34 @@ class ShortestPath<K>(val start: K,
     fun getPath(): List<K> {
         val result = mutableListOf<K>()
         var x = end
-        while (x != null) {
-            result.add(x)
+        if (end == null) return emptyList()
+        while (x != start) {
+            result.add(x!!)
             x = paths[x]?.from
         }
         return result.reversed()
+    }
+}
+
+fun <K, V> multiMap() = mutableMapOf<K, LinkedList<V>>()
+fun <K, V> MutableMap<K, LinkedList<V>>.add(k: K, v: V) = this.computeIfAbsent(k) { _ -> LinkedList() }.add(v)
+
+class Timer(val name: String = "Time") {
+    private val start = System.currentTimeMillis()
+    private var lastSegment = start
+
+    fun measure(what: String) {
+        val time = System.currentTimeMillis()
+        if (lastSegment == start)
+            println("$name ${time - lastSegment} ms : $what")
+        else
+            println("$name ${time - lastSegment} / ${(time - start)} ms : $what")
+        lastSegment = time
+    }
+
+    fun <T> measure(what: String, fn: () -> T): T {
+        val result = fn()
+        measure(what)
+        return result
     }
 }

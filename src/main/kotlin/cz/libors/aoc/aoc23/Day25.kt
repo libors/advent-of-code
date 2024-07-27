@@ -14,18 +14,18 @@ object Day25 {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val input = readToLines("test.txt").flatMap {
-            val items = it.findAlphanums()
-            items.subList(1, items.size).map { i -> i to items[0] }
-        }
-        val vertices = (input.map { it.first } + input.map { it.second }).toSet()
-        println("pairs: ${input.size}, vertices: ${vertices.size}")
-        val counts = vertices.associateWith { v -> input.count { it.first == v || it.second == v } }
-        val stats = counts.entries.groupingBy { it.value }.eachCount()
-        println(stats)
-
-        val x = vertices.associateWith { v -> input.mapNotNull { if (it.first == v) it.second else if (it.second == v) it.first else null } }
-        x.forEach { (k, v) -> println("$k -> $v") }
+//        val input = readToLines("test.txt").flatMap {
+//            val items = it.findAlphanums()
+//            items.subList(1, items.size).map { i -> i to items[0] }
+//        }
+//        val vertices = (input.map { it.first } + input.map { it.second }).toSet()
+//        println("pairs: ${input.size}, vertices: ${vertices.size}")
+//        val counts = vertices.associateWith { v -> input.count { it.first == v || it.second == v } }
+//        val stats = counts.entries.groupingBy { it.value }.eachCount()
+//        println(stats)
+//
+//        val x = vertices.associateWith { v -> input.mapNotNull { if (it.first == v) it.second else if (it.second == v) it.first else null } }
+//        x.forEach { (k, v) -> println("$k -> $v") }
 
         TODO("Not implemented yet")
     }

@@ -3,7 +3,6 @@ package cz.libors.aoc.aoc23
 import cz.libors.util.*
 import cz.libors.util.Vector
 import java.math.BigInteger
-import java.util.*
 
 @Day(name = "Lavaduct Lagoon")
 object Day18 {
@@ -48,23 +47,10 @@ object Day18 {
         val points = instructionsToEdgePoints(input)
         val box = points.boundingBox()
         val innerPoint =
-            points.first { it.y == box.first.y && !points.contains(it.plus(Vector.DOWN)) }.plus(Vector.DOWN)
-        val content = floodWithin(innerPoint, points.toSet())
+            points.first { it.y == box.first.y && !points.contains(it.down()) }.down()
+        val rim = points.toSet()
+        val content = flood(innerPoint) { it.adjacentPoints().filter { x -> !rim.contains(x) }}
         return content.size + points.toSet().size
-    }
-
-    private fun floodWithin(innerPoint: Point, rim: Set<Point>): Set<Point> {
-        val result = mutableSetOf(innerPoint)
-        val queue = LinkedList<Point>()
-        queue.addLast(innerPoint)
-        while (queue.isNotEmpty()) {
-            val p = queue.removeFirst()
-            p.adjacentPoints().filter { !rim.contains(it) && !result.contains(it) }.forEach {
-                queue.addLast(it)
-                result.add(it)
-            }
-        }
-        return result
     }
 
     private fun instructionsVertexPoints(instructions: List<Instruction>): List<Point> {

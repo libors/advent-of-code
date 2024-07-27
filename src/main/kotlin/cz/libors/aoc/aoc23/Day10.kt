@@ -22,8 +22,8 @@ object Day10 {
         val box = path.boundingBox()
         val upPoint = path.first { it.y == box.first.y }
         val upIndex = path.indexOf(upPoint)
-        val rightHanded = (path[(upIndex + 1) % path.size] == upPoint.plus(Vector.RIGHT))
-                || (path[(upIndex - 1).posMod(path.size)] == upPoint.plus(Vector.LEFT))
+        val rightHanded = (path[(upIndex + 1) % path.size] == upPoint.right())
+                || (path[(upIndex - 1).posMod(path.size)] == upPoint.left())
         val innerLoopPath = if (rightHanded) path else path.reversed()
         val innerPoints = innerLoopPath.indices.flatMap { i ->
             rightHandRule(innerLoopPath[i], innerLoopPath[(i + 1) % innerLoopPath.size], innerLoopPath[(i + 2) % innerLoopPath.size])
@@ -44,17 +44,17 @@ object Day10 {
         val bodies = mutableListOf<Set<Point>>()
         for (p in freePoints) {
             if (!bodies.any { it.contains(p) }) {
-                bodies.add(flood(p, freePoints))
+                bodies.add(flood(p) { it.adjacentPoints().filter { x -> freePoints.contains(x) } })
             }
         }
         return bodies
     }
 
     private fun rightHandRule(p: Point, p2: Point, p3: Point): List<Point> = when (p.vectorTo(p2)) {
-        Vector.RIGHT -> if (p2.vectorTo(p3) == Vector.UP) listOf(p.plus(Vector.DOWN), p2.plus(Vector.DOWN)) else listOf(p.plus(Vector.DOWN))
-        Vector.LEFT -> if (p2.vectorTo(p3) == Vector.DOWN) listOf(p.plus(Vector.UP), p2.plus(Vector.UP)) else listOf(p.plus(Vector.UP))
-        Vector.UP -> if (p2.vectorTo(p3) == Vector.LEFT) listOf(p.plus(Vector.RIGHT), p2.plus(Vector.RIGHT)) else listOf(p.plus(Vector.RIGHT))
-        Vector.DOWN -> if (p2.vectorTo(p3) == Vector.RIGHT) listOf(p.plus(Vector.LEFT), p2.plus(Vector.LEFT)) else listOf(p.plus(Vector.LEFT))
+        Vector.RIGHT -> if (p2.vectorTo(p3) == Vector.UP) listOf(p.down(), p2.down()) else listOf(p.down())
+        Vector.LEFT -> if (p2.vectorTo(p3) == Vector.DOWN) listOf(p.up(), p2.up()) else listOf(p.up())
+        Vector.UP -> if (p2.vectorTo(p3) == Vector.LEFT) listOf(p.right(), p2.right()) else listOf(p.right())
+        Vector.DOWN -> if (p2.vectorTo(p3) == Vector.RIGHT) listOf(p.left(), p2.left()) else listOf(p.left())
         else -> throw IllegalArgumentException()
     }
 
@@ -76,12 +76,12 @@ object Day10 {
     }
 
     private fun connections(p: Point, pipe: Char): List<Point> = when (pipe) {
-        '|' -> listOf(p.plus(Vector.UP), p.plus(Vector.DOWN))
-        '-' -> listOf(p.plus(Vector.LEFT), p.plus(Vector.RIGHT))
-        'L' -> listOf(p.plus(Vector.UP), p.plus(Vector.RIGHT))
-        'J' -> listOf(p.plus(Vector.UP), p.plus(Vector.LEFT))
-        '7' -> listOf(p.plus(Vector.DOWN), p.plus(Vector.LEFT))
-        'F' -> listOf(p.plus(Vector.DOWN), p.plus(Vector.RIGHT))
+        '|' -> listOf(p.up(), p.down())
+        '-' -> listOf(p.left(), p.right())
+        'L' -> listOf(p.up(), p.right())
+        'J' -> listOf(p.up(), p.left())
+        '7' -> listOf(p.down(), p.left())
+        'F' -> listOf(p.down(), p.right())
         else -> throw IllegalArgumentException()
     }
 }

@@ -10,7 +10,7 @@ import java.util.function.Supplier
 
 object Runner {
 
-    data class DayRecord(val num: Int, val time: Long, val lines: Int, val notImplemented: Boolean)
+    private data class DayRecord(val num: Int, val time: Long, val lines: Int, val notImplemented: Boolean)
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -94,8 +94,6 @@ object Runner {
         val end = System.currentTimeMillis()
         return Pair(result, end - start)
     }
-
-    private data class MeasureResult(val took: Long, )
 
     private fun downloadInput(dayClass: Class<*>, year: Int): Boolean {
         val day = dayClass.simpleName.findInts()[0]

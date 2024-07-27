@@ -47,9 +47,9 @@ object Day19 {
         println(task2(bluePrints))
     }
 
-    var calls = 0
-    var maxCosts = listOf<Int>()
-    var costs = listOf<List<Int>>()
+    private var calls = 0
+    private var maxCosts = listOf<Int>()
+    private var costs = listOf<List<Int>>()
 
     fun dfs(robots: List<Int>, resources: List<Int>, time: Int, skipCreate: Boolean): Int {
         if (++calls % 1000000 == 0) debug(calls)
@@ -57,7 +57,7 @@ object Day19 {
         if (totmax > 0 && resources[GE] + possibleMaxGeodeProd(time, robots[GE]) < totmax) {
             return 0
         }
-        val hashKey = HashKey.build(robots.toList(), resources.toList(), time)
+        val hashKey = HashKey.build(robots, resources, time)
         val hashResult = hash[hashKey]
         if (hashResult != null) return hashResult
 
