@@ -12,11 +12,6 @@ repositories {
 }
 
 dependencies {
-
-    implementation("com.googlecode.json-simple:json-simple:1.1.1")
-    implementation("org.jgrapht:jgrapht-core:1.5.2")
-
-    testImplementation(kotlin("test"))
 }
 
 tasks.test {
@@ -24,5 +19,5 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "17"
 }

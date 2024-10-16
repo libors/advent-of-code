@@ -1,7 +1,7 @@
 package cz.libors.util
 
 class PlanePrinter(
-    private val charRepresentation: Map<Long, Char> = mapOf(1L to 'x', 0L to '.'),
+    val charRepresentation: Map<Long, Char> = mapOf(1L to 'x', 0L to '.'),
     private val zero: Long = 0L,
     private val unknown: (Long) -> Char = { '?' },
     private val inverse: Boolean = false,

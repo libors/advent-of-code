@@ -1,6 +1,6 @@
 package cz.libors.util
 
-import cz.libors.aoc.aoc23.Day2
+import cz.libors.aoc.aoc21.Day2
 import java.lang.reflect.InvocationTargetException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -10,7 +10,7 @@ import java.util.function.Supplier
 
 object Runner {
 
-    private data class DayRecord(val num: Int, val time: Long, val lines: Int, val notImplemented: Boolean)
+    private data class DayRecord(val year: Int, val num: Int, val time: Long, val lines: Int, val notImplemented: Boolean)
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -23,6 +23,9 @@ object Runner {
         }
 
         val dayRecords = ArrayList<DayRecord>()
+        println("\n*****************************************")
+        println("*                20$year                   *")
+        println("*****************************************")
         for (clazz in dayClasses) {
             val day = clazz.simpleName.findInts()[0]
             val dayAnnotation = clazz.getAnnotation(Day::class.java)
@@ -39,14 +42,14 @@ object Runner {
                     } else throw e
                 }
             }
-            dayRecords.add(DayRecord(day, took.second, getClassLines(clazz), took.first))
+            dayRecords.add(DayRecord(year, day, took.second, getClassLines(clazz), took.first))
         }
 
         printStatistics(dayRecords)
     }
 
     private fun printStatistics(dayRecords: ArrayList<DayRecord>) {
-        println("\nStatistics:\nday    ms  lines")
+        println("\nStatistics (20${dayRecords[0].year}):\nday    ms  lines")
         dayRecords.forEach { d ->
             println(
                 "${d.num.toString().padStart(2)}  ${d.time.toString().padStart(5)}  "
@@ -60,7 +63,7 @@ object Runner {
         }
 
         println("\n*****************************************")
-        println("${dayRecords.size} days solved in ${dayRecords.sumOf { it.time } / 1000} seconds, ${dayRecords.sumOf { it.lines }} LOC.")
+        println("${dayRecords.size} days solved in ${dayRecords.sumOf { it.time } / 1000F} seconds, ${dayRecords.sumOf { it.lines }} LOC.")
         println("*****************************************")
     }
 
@@ -102,6 +105,7 @@ object Runner {
         val resourceLocation = Path.of(projectLocation + "src/main/resources/$year/input${day}.txt")
 
         if (Files.exists(resourceLocation)) return false
+        println("NOT EXIST $resourceLocation")
 
         val url = "https://adventofcode.com/20$year/day/$day/input"
         val sessionCookie = System.getProperty("aoc-cookie")

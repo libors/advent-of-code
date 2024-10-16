@@ -1,44 +1,40 @@
 package cz.libors.aoc.aoc22
 
-import cz.libors.util.Day
-import cz.libors.util.readToText
-import cz.libors.util.splitByEmptyLine
-import cz.libors.util.splitByNewLine
-import org.json.simple.parser.JSONParser
+import cz.libors.util.*
 import java.lang.Integer.min
 
 @Day(name = "Distress Signal")
 object Day13 {
 
-    private fun task1(data: List<List<List<*>>>) =
+    private fun task1(data: List<List<TreeNode<Int>>>) =
         data.mapIndexed { idx, it -> Pair(idx + 1, compare(it[0], it[1])) }
             .filter { it.second < 0 }
             .sumOf { it.first }
 
-    private fun task2(data: List<List<List<*>>>): Int {
-        val d1 = listOf(listOf(2L))
-        val d2 = listOf(listOf(6L))
+    private fun task2(data: List<List<TreeNode<Int>>>): Int {
+        val d1 = TreeNode(items = listOf(TreeNode(v = 2)))
+        val d2 = TreeNode(items = listOf(TreeNode(v = 6)))
         val sorted = data.flatten()
             .plus(listOf(d1, d2))
             .sortedWith { l, r -> compare(l, r).toInt() }
         return (sorted.indexOf(d1) + 1) * (sorted.indexOf(d2) + 1)
     }
 
-    private fun compare(first: Any, second: Any): Long {
-        if (first is Long && second is Long)
-            return first - second
-        else if (first is Long)
-            return compare(listOf(first), second)
-        else if (second is Long)
-            return compare(first, listOf(second))
+    private fun compare(first: TreeNode<Int>, second: TreeNode<Int>): Int {
+        if (first.isValue() && second.isValue())
+            return first.v!! - second.v!!
+        else if (first.isValue())
+            return compare(TreeNode(items = listOf(first)), second)
+        else if (second.isValue())
+            return compare(first, TreeNode(items = listOf(second)))
         else {
-            val left = first as List<*>
-            val right = second as List<*>
+            val left = first.items
+            val right = second.items
             for (i in 0 until min(left.size, right.size)) {
-                val cmp = compare(left[i]!!, right[i]!!)
-                if (cmp != 0L) return cmp
+                val cmp = compare(left[i], right[i])
+                if (cmp != 0) return cmp
             }
-            return (left.size - right.size).toLong()
+            return left.size - right.size
         }
     }
 
@@ -46,7 +42,7 @@ object Day13 {
     fun main(args: Array<String>) {
         val input = readToText("input13.txt")
             .splitByEmptyLine()
-            .map { it.splitByNewLine().map { s -> JSONParser().parse(s) as List<*> } }
+            .map { it.splitByNewLine().map { s -> s.readTree { x -> x.toInt() } } }
         println(task1(input))
         println(task2(input))
     }

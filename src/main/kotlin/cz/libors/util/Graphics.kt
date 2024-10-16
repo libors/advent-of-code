@@ -15,7 +15,7 @@ import javax.swing.SwingUtilities
 typealias ColorSchema = (Point, Int) -> Color
 
 class Graphics(
-    val debugFromStart: Boolean = true,
+    debugFromStart: Boolean = true,
     val delay: Long = 100,
     val rememberHistory: Boolean = false,
     circles: Boolean = false,

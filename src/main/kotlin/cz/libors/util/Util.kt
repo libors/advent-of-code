@@ -1,10 +1,13 @@
 package cz.libors.util
 
 import java.util.*
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.collections.ArrayList
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
+
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
@@ -130,6 +133,7 @@ fun Box.contains(p: Point) =
     this.first.x <= p.x && this.first.y <= p.y && this.second.x >= p.x && this.second.y >= p.y
 
 fun Box.center() = Point((this.first.x + this.second.x) / 2, (this.first.y + this.second.y) / 2)
+fun Box.size() = Pair(this.second.x - this.first.x + 1, this.second.y - this.first.y + 1)
 
 fun Pair<Point, Point>.invert(points: Set<Point>): Set<Point> {
     val result = mutableSetOf<Point>()
@@ -139,6 +143,48 @@ fun Pair<Point, Point>.invert(points: Set<Point>): Set<Point> {
             if (!points.contains(p)) result.add(p)
         }
     return result.toSet()
+}
+
+fun <T> String.readTree(fn: (String) -> T): TreeNode<T> {
+    val open = "[<({"
+    val close = "]>)}"
+    val stack = LinkedList<MutableList<TreeNode<T>>>()
+    var value = ""
+    var bracket = ' '
+    var current = mutableListOf<TreeNode<T>>()
+    for (i in this) {
+        when (i) {
+            in open -> {
+                stack.push(current)
+                bracket = i
+                current = mutableListOf()
+            }
+            in close -> {
+                if (value != "") {
+                    current.add(TreeNode(null, fn(value), listOf()))
+                    value = ""
+                }
+                val pushed = stack.pop()
+                pushed.add(TreeNode(bracket, null, current))
+                current = pushed
+            }
+            ',' -> {
+                if (value != "") {
+                    current.add(TreeNode(null, fn(value), listOf()))
+                    value = ""
+                }
+            }
+            else -> value += i
+        }
+    }
+    return current.get(0)
+}
+
+data class TreeNode<T>(val bracket: Char? = '[', val v: T? = null, val items: List<TreeNode<T>> = listOf()) {
+    fun isValue() = v!= null
+    override fun toString(): String {
+        return if (v == null) "[${items.joinToString(",")}]" else v?.toString()
+    }
 }
 
 data class Body(val points: Set<Point>) {
@@ -311,7 +357,7 @@ fun <K> dijkstra(
     queue.add(ScoredNode(start, 0))
     var endNode: K? = null
     while (queue.isNotEmpty() && endNode == null) {
-        val (node, score) = queue.remove()
+        val (node, score) = queue.poll()
         if (endFn(node)) endNode = node
         for (neighbour in neighboursFn(node)) {
             if (!seen.containsKey(neighbour)) {
@@ -335,7 +381,7 @@ fun <K> bfs(
     queue.add(ScoredNode(start, 0))
     var endNode: K? = null
     while (queue.isNotEmpty() && endNode == null) {
-        val (node, score) = queue.removeFirst()
+        val (node, score) = queue.poll()
         if (endFn(node)) endNode = node
         for (neighbour in neighboursFn(node)) {
             if (!seen.containsKey(neighbour)) {
@@ -393,5 +439,24 @@ class Timer(val name: String = "Time") {
         val result = fn()
         measure(what)
         return result
+    }
+}
+
+fun <T> permute(list: List<T>, permutationFn: (List<T>) -> Boolean): List<T> {
+    val result = AtomicReference<List<T>>()
+    permute(ArrayList(list), 0, permutationFn, result)
+    return result.get()
+}
+
+private fun <T> permute(list: List<T>, k: Int, fn: (List<T>) -> Boolean, result: AtomicReference<List<T>>) {
+    if (result.get() != null) return
+    for (i in k until list.size) {
+        Collections.swap(list, i, k)
+        if (result.get() != null) break
+        permute(list, k + 1, fn, result)
+        Collections.swap(list, k, i)
+    }
+    if (k == list.size - 1) {
+        if (fn(list)) result.set(ArrayList(list))
     }
 }
