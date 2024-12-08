@@ -1,6 +1,5 @@
 package cz.libors.util
 
-import cz.libors.aoc.aoc21.Day2
 import java.lang.reflect.InvocationTargetException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -10,16 +9,33 @@ import java.util.function.Supplier
 
 object Runner {
 
+    private val years = listOf("21", "22", "23", "24")
+
     private data class DayRecord(val year: Int, val num: Int, val time: Long, val lines: Int, val notImplemented: Boolean)
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val pckg = Day2.javaClass.packageName
+        val year = menu()
+        val summary = mutableListOf<List<DayRecord>>()
+        if (year.isBlank()) {
+            years.forEach { summary.add(runForYear("cz.libors.aoc.aoc$it")) }
+        } else {
+            summary.add(runForYear("cz.libors.aoc.aoc$year"))
+        }
+        println("\n*****************************************")
+        println("*                SUMMARY                *")
+        println("*****************************************")
+        summary.forEach { event ->
+            println("20${event[0].year} : ${event.size} days solved in " +
+                    "${event.sumOf { it.time } / 1000F} seconds, ${event.sumOf { it.lines }} LOC.")
+        }
+    }
+
+    private fun runForYear(pckg: String): List<DayRecord> {
         val dayClasses = getClasses(pckg)
         val year = pckg.findInts()[0]
-        if (ensureInputsDownloaded(year, dayClasses)) {
-            println("Some inputs were downloaded to classpath resources. Run again.")
-            return
+        require(!downloadMissingInputs(year, dayClasses)) {
+            "Some inputs were downloaded to classpath resources. Run again."
         }
 
         val dayRecords = ArrayList<DayRecord>()
@@ -30,7 +46,7 @@ object Runner {
             val day = clazz.simpleName.findInts()[0]
             val dayAnnotation = clazz.getAnnotation(Day::class.java)
             val dayName = if (dayAnnotation != null) ": " + dayAnnotation.name else "";
-            println("\nDay $day$dayName\n------------------------------")
+            println("\nDay $day (20$year) $dayName")
             val took = measure {
                 try {
                     clazz.methods.first { it.name == "main" }.invoke(clazz.kotlin, arrayOf<String>())
@@ -46,6 +62,17 @@ object Runner {
         }
 
         printStatistics(dayRecords)
+        return dayRecords
+    }
+
+    private fun menu(): String {
+        println("Pick year to run:")
+        println(years.joinToString(" / "))
+        println("ENTER -> all years")
+        print("> ")
+        val option = readln()
+        require (option.isEmpty() || years.contains(option.trim())) { "$option year is not supported" }
+        return option
     }
 
     private fun printStatistics(dayRecords: ArrayList<DayRecord>) {
@@ -61,13 +88,9 @@ object Runner {
         if (notFinished.isNotEmpty()) {
             println("\nNot finished days: ${notFinished.joinToString(", ")}\n")
         }
-
-        println("\n*****************************************")
-        println("${dayRecords.size} days solved in ${dayRecords.sumOf { it.time } / 1000F} seconds, ${dayRecords.sumOf { it.lines }} LOC.")
-        println("*****************************************")
     }
 
-    private fun ensureInputsDownloaded(year: Int, dayClasses: List<Class<*>>) = dayClasses
+    private fun downloadMissingInputs(year: Int, dayClasses: List<Class<*>>) = dayClasses
         .map { downloadInput(it, year) }
         .any { it }
 
@@ -80,7 +103,7 @@ object Runner {
     }
 
     private fun getClassLines(clazz: Class<*>): Int {
-        val location = clazz.getResource(clazz.getSimpleName() + ".class").path
+        val location = clazz.getResource(clazz.getSimpleName() + ".class")!!.path
         val srcLocation = location.replace("/build/classes/kotlin/main/", "/src/main/kotlin/")
             .replace(".class", ".kt")
         try {
@@ -101,7 +124,7 @@ object Runner {
     private fun downloadInput(dayClass: Class<*>, year: Int): Boolean {
         val day = dayClass.simpleName.findInts()[0]
         val projectLocation =
-            dayClass.getResource(dayClass.getSimpleName() + ".class").path.substringBefore("build/classes")
+            dayClass.getResource(dayClass.getSimpleName() + ".class")!!.path.substringBefore("build/classes")
         val resourceLocation = Path.of(projectLocation + "src/main/resources/$year/input${day}.txt")
 
         if (Files.exists(resourceLocation)) return false
@@ -109,7 +132,9 @@ object Runner {
 
         val url = "https://adventofcode.com/20$year/day/$day/input"
         val sessionCookie = System.getProperty("aoc-cookie")
-        require(sessionCookie != null) { "Add AOC session cookie value from web browser to aoc-cookie system property to authenticate to download inputs." }
+        require(sessionCookie != null) {
+            "Add AOC session cookie value from web browser to aoc-cookie system property to authenticate to download inputs."
+        }
 
         val con: HttpURLConnection = URL(url).openConnection() as HttpURLConnection
         con.setRequestMethod("GET")

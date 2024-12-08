@@ -8,7 +8,6 @@ import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 
-
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Day(val name: String)
@@ -76,6 +75,17 @@ fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 fun gcd(a: Long, b: Long): Long = if (b == 0L) a else gcd(b, a % b)
 fun lcm(a: Long, b: Long): Long = a / gcd(a, b) * b
 
+fun <T> List<T>.tail() = when {
+    this.isEmpty() -> throw NoSuchElementException()
+    else -> this.subList(1, this.size)
+}
+
+fun <T> MutableList<T>.swap(i1: Int, i2: Int) {
+    val tmp = this[i1]
+    this[i1] = this[i2]
+    this[i2] = tmp
+}
+
 fun <T> Iterable<T>.toTuples(n: Int): List<List<T>> {
     val iterator = this.iterator()
     val result = mutableListOf<List<T>>()
@@ -106,7 +116,7 @@ data class Point(val x: Int, val y: Int) {
     fun diagonalPoints(): List<Point> =
         listOf(add(Vector(1, 1)), add(Vector(1, -1)), add(Vector(-1, 1)), add(Vector(-1, -1)))
 
-    fun touchingPoints(): List<Point> = adjacentPoints() + diagonalPoints();
+    fun touchingPoints(): List<Point> = adjacentPoints() + diagonalPoints()
 
     fun series(direction: Vector, points: Set<Point>): List<Point> {
         val result = mutableListOf(this)
@@ -115,7 +125,7 @@ data class Point(val x: Int, val y: Int) {
             result.add(p)
             p = p.plus(direction)
         }
-        return result;
+        return result
     }
 
     override fun toString() = "[$x, $y]"
@@ -177,13 +187,13 @@ fun <T> String.readTree(fn: (String) -> T): TreeNode<T> {
             else -> value += i
         }
     }
-    return current.get(0)
+    return current[0]
 }
 
 data class TreeNode<T>(val bracket: Char? = '[', val v: T? = null, val items: List<TreeNode<T>> = listOf()) {
     fun isValue() = v!= null
     override fun toString(): String {
-        return if (v == null) "[${items.joinToString(",")}]" else v?.toString()
+        return v?.toString() ?: "[${items.joinToString(",")}]"
     }
 }
 
@@ -223,6 +233,8 @@ data class Vector(val x: Int, val y: Int) {
             else -> null
         }
 
+        fun orthogonalVectors(): List<Vector> = listOf(UP, RIGHT, DOWN, LEFT)
+        fun diagonalVectors(): List<Vector> = listOf(RIGHT_UP, RIGHT_DOWN, LEFT_DOWN, LEFT_UP)
     }
 
     fun normalize(): Vector = gcd(x, y).absoluteValue
@@ -241,10 +253,6 @@ data class Vector3(val x: Int, val y: Int, val z: Int) {
 }
 
 data class Point3(val x: Int, val y: Int, val z: Int) {
-
-    companion object {
-
-    }
 
     fun adjacent() = listOf(
         Point3(x, y, z + 1),
@@ -456,7 +464,5 @@ private fun <T> permute(list: List<T>, k: Int, fn: (List<T>) -> Boolean, result:
         permute(list, k + 1, fn, result)
         Collections.swap(list, k, i)
     }
-    if (k == list.size - 1) {
-        if (fn(list)) result.set(ArrayList(list))
-    }
+    if (k == list.size - 1 && fn(list)) result.set(ArrayList(list))
 }

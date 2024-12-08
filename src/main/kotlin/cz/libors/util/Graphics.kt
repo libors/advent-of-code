@@ -326,8 +326,6 @@ private class Surface(
     }
 
     private inline fun tx(x: Int) = (x - min.x) * pointSize
-    private inline fun ty(y: Int) = if (inverse) {
-        (max.y - y) * pointSize
-    } else (y - min.y) * pointSize
+    private inline fun ty(y: Int) = if (inverse) (max.y - y) * pointSize else (y - min.y) * pointSize
 
 }
