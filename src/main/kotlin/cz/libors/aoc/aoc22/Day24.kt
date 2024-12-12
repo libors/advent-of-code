@@ -46,7 +46,7 @@ object Day24 {
             if (record.position == exitPoint)
                 return record.minute
             val nextMinuteEmpty = valley.getForMinute(record.minute + 1)
-            record.position.adjacentPoints()
+            record.position.neighbours()
                 .filter { nextMinuteEmpty.contains(it) }
                 .forEach { queue.addLast(QueRecord(record.minute + 1, it)) }
             if (nextMinuteEmpty.contains(record.position))

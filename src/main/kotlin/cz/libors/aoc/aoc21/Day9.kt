@@ -14,7 +14,7 @@ object Day9 {
     }
 
     private fun task1(input: Map<Point, Char>) = input
-        .filter { it.key.adjacentPoints().filter { p -> input.contains(p) }.all { p -> input[p]!! > it.value } }
+        .filter { it.key.neighbours().filter { p -> input.contains(p) }.all { p -> input[p]!! > it.value } }
         .map { it.value.toString().toInt() + 1 }
         .sum()
 
@@ -23,7 +23,7 @@ object Day9 {
         val remaining = input.filter { it.value != '9' }.keys.toMutableList()
         while (remaining.isNotEmpty()) {
             val valley = flood(remaining[0]) {
-                it.adjacentPoints().filter { p -> input.containsKey(p) && input[p] != '9' }
+                it.neighbours().filter { p -> input.containsKey(p) && input[p] != '9' }
             }
             valleys.add(valley.size)
             remaining.removeAll(valley)

@@ -18,18 +18,18 @@ object Day17 {
         val box = input.keys.boundingBox()
         return dijkstra(
             Position(box.first, Vector.RIGHT, 0),
-            { it.p == box.second },
-            { _, b -> input[b.p]!! },
-            { neighbours(it).filter { x -> box.contains(x.p) } }).getScore()!!
+            endFn = { it.p == box.second },
+            distanceFn = { _, b -> input[b.p]!! },
+            neighboursFn = { neighbours(it).filter { x -> box.contains(x.p) } }).getScore()!!
     }
 
     private fun task2(input: Map<Point, Int>): Int {
         val box = input.keys.boundingBox()
         return dijkstra(
             Position(box.first, Vector.RIGHT, 0),
-            { it.p == box.second && it.dirMoves >= 4 },
-            { _, b -> input[b.p]!! },
-            { neighbours2(it).filter { x -> box.contains(x.p) } }).getScore()!!
+            endFn = { it.p == box.second && it.dirMoves >= 4 },
+            distanceFn = { _, b -> input[b.p]!! },
+            neighboursFn = { neighbours2(it).filter { x -> box.contains(x.p) } }).getScore()!!
     }
 
     private fun neighbours(pos: Position): Iterable<Position> {

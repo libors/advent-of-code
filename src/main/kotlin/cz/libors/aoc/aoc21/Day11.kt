@@ -42,7 +42,7 @@ object Day11 {
     }
 
     private fun flash(octopi: MutableMap<Point, Int>, octopus: Point) {
-        val neighbours = octopus.adjacentPoints() + octopus.diagonalPoints()
+        val neighbours = octopus.neighbours(alsoDiag = true)
         for (neighbour in neighbours) {
             val energy = octopi[neighbour]
             if (energy != null) {

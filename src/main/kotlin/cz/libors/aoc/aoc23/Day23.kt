@@ -27,24 +27,24 @@ object Day23 {
 
         val points = maze.filter { ".>v".contains(it.value) }.keys
         val crossroads = (points.filter { p ->
-            p.adjacentPoints().filter { a -> points.contains(a) }.size > 2
+            p.neighbours().filter { a -> points.contains(a) }.size > 2
         } + start + end).toSet()
         val pointMap = crossroads.toList().mapIndexed { idx, p -> p to idx }.toMap()
         val mazeWithCrossroads = maze + crossroads.associateWith { 'x' }
 
-        val pointNodes = crossroads.map { sp ->
-            pointMap[sp]!! to sp.adjacentPoints()
+        val pointNodes = crossroads.associate { sp ->
+            pointMap[sp]!! to sp.neighbours()
                 .filter { points.contains(it) && !crossroads.contains(it) }
                 .mapNotNull { adj -> findSingleTrack(sp, adj, mazeWithCrossroads, useSlopes) }
                 .map { Edge(pointMap[it.first]!!, it.second) }
                 .toTypedArray()
-        }.toMap()
+        }
         val nodes = Array(crossroads.size) { pointNodes[it]!! }
         return Graph(pointMap, nodes)
     }
 
     private fun findSingleTrack(initCrossroad: Point, start: Point, maze: Map<Point, Char>, useSlopes: Boolean): Pair<Point, Int>? {
-        val path = bfs(start, { maze[it] == 'x'}, { it.adjacentPoints().filter { x -> maze.containsKey(x) && x != initCrossroad } })
+        val path = bfs(start, { maze[it] == 'x'}, { it.neighbours().filter { x -> maze.containsKey(x) && x != initCrossroad } })
         if (path.getPath().isEmpty()) return null
         if (useSlopes) {
             var previous = initCrossroad

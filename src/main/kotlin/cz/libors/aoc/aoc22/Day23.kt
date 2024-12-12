@@ -55,7 +55,7 @@ object Day23 {
     }
 
     private fun pickNewPos(current: Point, elves: Set<Point>, initRule: Int): Point {
-        if (current.adjacentPoints().none { elves.contains(it) }
+        if (current.neighbours().none { elves.contains(it) }
             && current.diagonalPoints().none { elves.contains(it) }) return current
         for (rule in initRule..initRule + 3) {
             val next = rules[rule % 4].tryIt(current, elves)

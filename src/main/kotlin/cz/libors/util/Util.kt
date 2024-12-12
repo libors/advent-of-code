@@ -112,16 +112,18 @@ data class Point(val x: Int, val y: Int) {
     fun add(other: Vector) = Point(x + other.x, y + other.y)
     fun vectorTo(other: Point) = Vector(other.x - x, other.y - y)
     fun switch() = Point(y, x)
-    fun adjacentPoints(): List<Point> = listOf(add(Vector.UP), add(Vector.DOWN), add(Vector.LEFT), add(Vector.RIGHT))
+    fun neighbours(alsoDiag: Boolean = false) = if (alsoDiag) adjacentPoints() + diagonalPoints() else adjacentPoints()
+    private fun adjacentPoints(): List<Point> = listOf(add(Vector.UP), add(Vector.DOWN), add(Vector.LEFT), add(Vector.RIGHT))
     fun diagonalPoints(): List<Point> =
-        listOf(add(Vector(1, 1)), add(Vector(1, -1)), add(Vector(-1, 1)), add(Vector(-1, -1)))
+        listOf(add(Vector.RIGHT_DOWN), add(Vector.RIGHT_UP), add(Vector.LEFT_DOWN), add(Vector.LEFT_UP))
 
-    fun touchingPoints(): List<Point> = adjacentPoints() + diagonalPoints()
-
-    fun series(direction: Vector, points: Set<Point>): List<Point> {
+    inline fun series(direction: Vector, includeStart: Boolean = false, isValid: (Point) -> Boolean): List<Point> {
         val result = mutableListOf(this)
+        if (includeStart){
+            result.add(this)
+        }
         var p = this.plus(direction)
-        while (points.contains(p)) {
+        while (isValid(p)) {
             result.add(p)
             p = p.plus(direction)
         }
@@ -292,6 +294,19 @@ fun <K> flood(start: K, neighborsFn: (K) -> Iterable<K>): Set<K> {
     return result
 }
 
+fun dividePoints(points: Iterable<Point>, isNeighbor: (Point, Point) -> Boolean): List<Set<Point>> {
+    val processed = mutableSetOf<Point>()
+    val result = mutableListOf<Set<Point>>()
+    for (p in points) {
+        if (!processed.contains(p)) {
+            val area = flood(p) { it.neighbours().filter { n -> isNeighbor(it, n) }}
+            result.add(area)
+            processed.addAll(area)
+        }
+    }
+    return result
+}
+
 data class Interval(val from: Long, val to: Long) {
     fun isSubOf(other: Interval) = from >= other.from && to <= other.to
     fun contains(other: Interval) = other.isSubOf(this)
@@ -353,6 +368,15 @@ fun warshall(nodes: Int, distFn: (Int) -> Map<Int, Int>): Array<IntArray> {
     return matrix
 }
 
+fun <K> dijkstraToAll(
+    start: K,
+    distanceFn: (K, K) -> Int = { _, _ -> 1 },
+    neighboursFn: (K) -> Iterable<K>
+): ShortestPaths<K> {
+    val paths = dijkstra(start, {_ -> false}, distanceFn, neighboursFn)
+    return ShortestPaths(start, paths.paths)
+}
+
 fun <K> dijkstra(
     start: K,
     endFn: (K) -> Boolean,
@@ -368,8 +392,10 @@ fun <K> dijkstra(
         val (node, score) = queue.poll()
         if (endFn(node)) endNode = node
         for (neighbour in neighboursFn(node)) {
-            if (!seen.containsKey(neighbour)) {
-                val scoredNode = ScoredNode(neighbour, distanceFn(node, neighbour) + score)
+            val n = seen[neighbour]
+            val newScore = distanceFn(node, neighbour) + score
+            if (n == null || n.score > newScore) {
+                val scoredNode = ScoredNode(neighbour, newScore)
                 queue.add(scoredNode)
                 seen[scoredNode.node] = PathToNode(node, scoredNode.score)
             }
@@ -405,9 +431,16 @@ fun <K> bfs(
 private data class ScoredNode<K>(val node: K, val score: Int)
 data class PathToNode<K>(val from: K, val score: Int)
 
+class ShortestPaths<K>(
+    val start: K,
+    private val paths: Map<K, PathToNode<K>>) {
+
+    fun pathTo(node: K) = ShortestPath(start, paths, node)
+}
+
 class ShortestPath<K>(
     val start: K,
-    private val paths: Map<K, PathToNode<K>>,
+    val paths: Map<K, PathToNode<K>>,
     val end: K?
 ) {
 
@@ -425,6 +458,9 @@ class ShortestPath<K>(
         }
         return result.reversed()
     }
+
+    fun hasPath() = getScore() != null
+    override fun toString() = "Path $start -> $end : ${getScore()}"
 }
 
 fun <K, V> multiMap() = mutableMapOf<K, LinkedList<V>>()

@@ -17,7 +17,7 @@ object Day21 {
         var positions = listOf(input.entries.first { it.value == 'S' }.key)
         for (i in 1..10) {
             positions = positions.flatMap {
-                it.adjacentPoints().filter { p -> input[p] == '.' || input[p] == 'S' }
+                it.neighbours().filter { p -> input[p] == '.' || input[p] == 'S' }
             }.distinct()
         }
         return positions.size
@@ -29,7 +29,7 @@ object Day21 {
         var prev = 0
         val counts = mutableMapOf<Int, Int>()
         for (i in 1..500) {
-            positions = positions.flatMap { it.adjacentPoints().filter { p ->
+            positions = positions.flatMap { it.neighbours().filter { p ->
                 val moduled = Point(p.x.posMod(size.x), p.y.posMod(size.y))
                 input[moduled] == '.' || input[moduled] == 'S' }
             }.distinct()

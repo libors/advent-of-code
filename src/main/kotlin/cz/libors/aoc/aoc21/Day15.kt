@@ -27,12 +27,9 @@ object Day15 {
         return findPath(bigPoints)
     }
 
-    private fun findPath(points: Map<Point, Int>): Int {
-        val box = points.keys.boundingBox()
-        val start = box.first
-        val end = box.second
-        return dijkstra(start, { it == end },
+    private fun findPath(points: Map<Point, Int>) = points.keys.boundingBox().let { box ->
+        dijkstra(box.first, { it == box.second },
             distanceFn = { _, b -> points[b]!! },
-            neighboursFn = { it.adjacentPoints().filter { x -> points.containsKey(x) } }).getScore()!!
+            neighboursFn = { it.neighbours().filter { x -> points.containsKey(x) } }).getScore()!!
     }
 }

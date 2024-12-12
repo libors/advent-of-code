@@ -36,7 +36,7 @@ object Day18 {
         var x = start
         for (instruction in instructions) {
             for (i in 1..instruction.amount) {
-                x = x.add(instruction.dir)
+                x += instruction.dir
                 points.add(x)
             }
         }
@@ -49,7 +49,7 @@ object Day18 {
         val innerPoint =
             points.first { it.y == box.first.y && !points.contains(it.down()) }.down()
         val rim = points.toSet()
-        val content = flood(innerPoint) { it.adjacentPoints().filter { x -> !rim.contains(x) }}
+        val content = flood(innerPoint) { it.neighbours().filter { x -> !rim.contains(x) }}
         return content.size + points.toSet().size
     }
 
@@ -58,7 +58,7 @@ object Day18 {
         val points = mutableListOf(start)
         var x = start
         for (instruction in instructions) {
-            x = x.add(instruction.dir * instruction.amount)
+            x += instruction.dir * instruction.amount
             points.add(x)
         }
         return points

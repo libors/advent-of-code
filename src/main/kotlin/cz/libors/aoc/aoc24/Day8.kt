@@ -31,19 +31,8 @@ object Day8 {
         return antiSet.size
     }
 
-    private fun findPairAntinodes(a1: Point, a2: Point, repeat: Boolean, box: Box): List<Point> {
-        val result = mutableListOf<Point>()
-        val vector = a1.vectorTo(a2)
-        var anti = a2 + vector
-        if (repeat) {
-            result.add(a1)
-            while (box.contains(anti)) {
-                result.add(anti)
-                anti += vector
-            }
-        } else {
-            if (box.contains(anti)) result.add(anti)
-        }
-        return result
+    private fun findPairAntinodes(a1: Point, a2: Point, repeat: Boolean, box: Box) = when (repeat) {
+        true -> a1.series(a1.vectorTo(a2), true) { box.contains(it) }
+        false -> listOf(a2 + a1.vectorTo(a2)).filter { box.contains(it) }
     }
 }

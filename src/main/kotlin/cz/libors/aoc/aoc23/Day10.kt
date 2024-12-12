@@ -44,7 +44,7 @@ object Day10 {
         val bodies = mutableListOf<Set<Point>>()
         for (p in freePoints) {
             if (!bodies.any { it.contains(p) }) {
-                bodies.add(flood(p) { it.adjacentPoints().filter { x -> freePoints.contains(x) } })
+                bodies.add(flood(p) { it.neighbours().filter { x -> freePoints.contains(x) } })
             }
         }
         return bodies
@@ -60,7 +60,7 @@ object Day10 {
 
     private fun findLoop(input: Map<Point, Char>): List<Point> {
         val start = input.entries.first { it.value == 'S' }.key
-        val firstStep = start.adjacentPoints().map { Pair(it, input[it]) }
+        val firstStep = start.neighbours().map { Pair(it, input[it]) }
             .filter { it.second != null && it.second != '.' }
             .first { connections(it.first, it.second!!).contains(start) }.first
         val path = mutableListOf(firstStep)
