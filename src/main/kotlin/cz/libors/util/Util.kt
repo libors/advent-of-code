@@ -70,10 +70,28 @@ fun String.splitByEmptyLine(): List<String> = this.split(Regex("\r?\n\r?\n"))
 fun String.splitByNewLine(): List<String> = this.split(Regex("\r?\n"))
 
 fun Int.posMod(x: Int) = (this % x).let { if (it >= 0) it else it + x }
+fun Double.isLong() = this % 1 == 0.0
 
 fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 fun gcd(a: Long, b: Long): Long = if (b == 0L) a else gcd(b, a % b)
 fun lcm(a: Long, b: Long): Long = a / gcd(a, b) * b
+
+fun bisect(interval: Pair<Long, Long>, value: Double, function: (Long) -> Double): Long {
+    var start = interval.first
+    var end = interval.second
+    val reverse = function(start) > function(end)
+    while (start < end) {
+        val middle = (start + end) / 2
+        val middleValue = function(middle)
+        val checkValue = if (reverse) -middleValue else middleValue
+        if (checkValue == value)
+            return middle
+        else if (checkValue < value)
+            start = middle + 1
+        else end = middle
+    }
+    return start
+}
 
 fun <T> List<T>.tail() = when {
     this.isEmpty() -> throw NoSuchElementException()
