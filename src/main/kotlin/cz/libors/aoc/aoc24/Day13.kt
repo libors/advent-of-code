@@ -16,12 +16,12 @@ object Day13 {
         println(task2(input))
     }
 
-    private fun task1(input: List<Machine>) = input.sumOf { computePresses(it) }
+    private fun task1(input: List<Machine>) = input.sumOf { computeMachineScore(it) }
     private fun task2(input: List<Machine>) = 10000000000000.let { addNum ->
         input.map { Machine(it.ax, it.ay, it.bx, it.by, it.px + addNum, it.py + addNum) }
-    }.sumOf { computePresses(it) }
+    }.sumOf { computeMachineScore(it) }
 
-    private fun computePresses(input: Machine): Long = with(input) {
+    private fun computeMachineScore(input: Machine): Long = with(input) {
         // computed on paper from Aax+Bbx=px, Aay+Bby=py
         val b = 1.0 * (py * ax - px * ay) / (by * ax - bx * ay)
         val a = 1.0 * (px - b * bx) / ax
