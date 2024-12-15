@@ -5,15 +5,16 @@ import cz.libors.util.Vector
 import java.awt.Color
 import java.util.*
 
+@Day("Warehouse Woes")
 object Day15 {
 
     @JvmStatic
     fun main(args: Array<String>) {
         val input = readToText("input15.txt").splitByEmptyLine()
-        val moves = input[1].map { Vector.from(it.toString()) }.filterNotNull()
-        val maze = input[0].splitByNewLine().toPointsWithValue().toMap()
+        val moves = input[1].map { Vector.from(it.toString(), mandatory = false) }.filterNotNull()
+        val maze = input[0].splitByNewLine().toPointsWithValue().toMap().toMutableMap()
         println(task1(maze, moves))
-        val wideMaze = input[0].splitByNewLine().map { widenMazeLine(it) }.toPointsWithValue().toMap()
+        val wideMaze = input[0].splitByNewLine().map { widenMazeLine(it) }.toPointsWithValue().toMap().toMutableMap()
         println(task2(wideMaze, moves))
     }
 
@@ -25,58 +26,62 @@ object Day15 {
         }
     }.joinToString(separator = "")
 
-    private fun task1(input: Map<Point, Char>, moves: List<Vector>): Int {
-        val maze = input.toMutableMap()
-        var pos = maze.filter { it.value == '@' }.keys.first()
-        maze[pos] = '.'
-        val g = initGraphics()
-        for (move in moves) {
-            val nextPos = pos + move
-            when (maze[nextPos]) {
-                '.' -> pos = nextPos
-                'O' -> {
-                    var check = nextPos
-                    while (maze[check] == 'O') check += move
-                    if (maze[check] != '#') {
-                        maze[check] = 'O'
-                        maze[nextPos] = '.'
-                        pos = nextPos
-                    }
-                }
-            }
-            //showMaze(g, pos, maze)
-        }
-        val start = maze.keys.boundingBox().first
-        return maze.filter { it.value == 'O' }.keys.sumOf { it.x - start.x + (it.y - start.y) * 100 }
+    private fun replaceStart(maze: MutableMap<Point, Char>): Point = maze.filter { it.value == '@' }.keys.first()
+        .also { maze[it] = '.' }
+
+    private fun countScore(maze: Map<Point, Char>, char: Char) =
+        maze.filter { it.value == char }.keys.sumOf { it.x + it.y * 100 }
+
+    private fun task1(maze: MutableMap<Point, Char>, moves: List<Vector>): Int {
+        moveInMaze(maze, moves, replaceStart(maze), ::push)
+        return countScore(maze, 'O')
     }
 
-    private fun task2(input: Map<Point, Char>, moves: List<Vector>): Int {
-        val maze = input.toMutableMap()
-        var pos = maze.filter { it.value == '@' }.keys.first()
-        maze[pos] = '.'
+    private fun task2(maze: MutableMap<Point, Char>, moves: List<Vector>): Int {
+        moveInMaze(maze, moves, replaceStart(maze), ::widePush)
+        return countScore(maze, '[')
+    }
+
+    private fun moveInMaze(
+        maze: MutableMap<Point, Char>, moves: List<Vector>, start: Point,
+        pushFn: (MutableMap<Point, Char>, Point, Vector) -> Point
+    ) {
         val g = initGraphics()
-        for (move in moves) {
-            val next = pos + move
-            val nextVal = maze[next]
-            if (nextVal == '.') {
-                pos = next
-            } else if (nextVal == '#') {
-                // nothing
-            } else {
-                if (move in listOf(Vector.LEFT, Vector.RIGHT)) {
-                    pos = wideMoveLeftRight(next, maze, move, pos)
-                } else {
-                    val boxes = findBoxes(pos, move, maze)
-                    if (boxes.isNotEmpty()) {
-                        moveBoxes(boxes, move, maze)
-                        pos = next
-                    }
-                }
+        var pos = start
+        for (dir in moves) {
+            val nextPos = pos + dir
+            pos = when (maze[nextPos]) {
+                '.' -> nextPos
+                '#' -> pos
+                else -> pushFn(maze, pos, dir)
             }
-            //showMaze(g, pos, maze)
+            // g.showChars(maze.mapValues { if (it.value == '.') ' ' else it.value } + mapOf(pos to '@'))
         }
-        val start = maze.keys.boundingBox().first
-        return maze.filter { it.value == '[' }.keys.map { it.x - start.x + (it.y - start.y) * 100 }.sum()
+    }
+
+    private fun push(maze: MutableMap<Point, Char>, pos: Point, dir: Vector): Point {
+        val nextPos = pos + dir
+        var check = nextPos
+        while (maze[check] == 'O') check += dir
+        return if (maze[check] != '#') {
+            maze[check] = 'O'
+            maze[nextPos] = '.'
+            nextPos
+        } else {
+            pos
+        }
+    }
+
+    private fun widePush(maze: MutableMap<Point, Char>, pos: Point, dir: Vector): Point {
+        val next = pos + dir
+        if (dir in listOf(Vector.LEFT, Vector.RIGHT)) {
+            return wideMoveLeftRight(next, maze, dir, pos)
+        } else {
+            val boxes = findBoxes(pos, dir, maze)
+            if (boxes.isEmpty()) return pos
+            moveBoxes(boxes, dir, maze)
+            return next
+        }
     }
 
     private fun wideMoveLeftRight(next: Point, maze: MutableMap<Point, Char>, move: Vector, pos: Point): Point {
@@ -96,41 +101,36 @@ object Day15 {
         }
     }
 
-    private fun moveBoxes(boxes: Set<Point>, move: Vector, maze: MutableMap<Point, Char>) {
-        val sorted = boxes.toList().sortedBy { if (move == Vector.UP) it.y else -it.y }
+    private fun moveBoxes(boxes: Set<Point>, dir: Vector, maze: MutableMap<Point, Char>) {
+        val sorted = boxes.toList().sortedBy { if (dir == Vector.UP) it.y else -it.y }
         for (box in sorted) {
-            maze[box + move] = maze[box]!!
-            maze[box.right() + move] = maze[box.right()]!!
+            maze[box + dir] = maze[box]!!
+            maze[box.right() + dir] = maze[box.right()]!!
             maze[box] = '.'
             maze[box.right()] = '.'
         }
     }
 
     private fun initGraphics() = Graphics(
-        debugFromStart = false,
-        delay = 50,
-        labelColor = Color.BLACK,
-        colorSchema = ColorSchemas.staticColors(listOf(Color.RED, Color.LIGHT_GRAY, Color.WHITE, Color.YELLOW, Color.YELLOW, Color.YELLOW))
+        debugFromStart = false, delay = 50, labelColor = Color.BLACK, charOrder = "@# O[]",
+        colorSchema = ColorSchemas.staticColors(listOf(Color.RED, Color.LIGHT_GRAY, Color.WHITE), default = Color.YELLOW)
     )
 
-    private fun showMaze(g: Graphics, pos: Point, maze: Map<Point, Char>) =
-        g.showChars(maze.mapValues { if (it.value == '.') ' ' else it.value } + mapOf(pos to '@'), order = "@# o[]")
-
-    private fun findBoxes(pos: Point, move: Vector, maze: Map<Point, Char>): Set<Point> {
+    private fun findBoxes(pos: Point, dir: Vector, maze: Map<Point, Char>): Set<Point> {
         val boxes = mutableSetOf<Point>()
         val q = LinkedList<Point>()
         q.add(pos)
         while (q.isNotEmpty()) {
             val cur = q.removeFirst()
-            val nextBrick = cur + move
-            when (maze[nextBrick]) {
+            val nextPos = cur + dir
+            when (maze[nextPos]) {
                 '[' -> {
-                    boxes.add(nextBrick)
-                    q.addAll(listOf(nextBrick, nextBrick.right()))
+                    boxes.add(nextPos)
+                    q.addAll(listOf(nextPos, nextPos.right()))
                 }
                 ']' -> {
-                    boxes.add(nextBrick.left())
-                    q.addAll(listOf(nextBrick, nextBrick.left()))
+                    boxes.add(nextPos.left())
+                    q.addAll(listOf(nextPos, nextPos.left()))
                 }
                 '#' -> return setOf()
             }

@@ -27,7 +27,7 @@ object Day14 {
             r = r.map { it.update(box) }
             second++
         }
-        Graphics().showInts(r.map { it.pos }.associateWith { 1 })
+        //Graphics().showInts(r.map { it.pos }.associateWith { 1 })
         return second
     }
 

@@ -24,6 +24,7 @@ class Graphics(
     inverse: Boolean = false,
     val displayLabels: Boolean = true,
     val colorSchema: ColorSchema = ColorSchemas.staticColors(),
+    val charOrder: String = "",
     labelColor: Color = Color.GRAY
 ) {
 
@@ -89,10 +90,10 @@ class Graphics(
         showGraphicPoints(showPoints, title)
     }
 
-    fun showChars(points: Map<Point, Char>, order: String = "", showNotStated: Boolean = false, title: String = "") {
+    fun showChars(points: Map<Point, Char>, showNotStated: Boolean = false, title: String = "") {
         val result = mutableListOf<ShowPoint>()
-        val orderIndices = order.toCharArray().mapIndexed { idx, ch -> ch to idx }.toMap()
-        val otherIndices = if (!showNotStated && order.isNotEmpty()) mapOf() else
+        val orderIndices = charOrder.toCharArray().mapIndexed { idx, ch -> ch to idx }.toMap()
+        val otherIndices = if (!showNotStated && charOrder.isNotEmpty()) mapOf() else
             points.filter { it.value !in orderIndices }
                 .map { it.value }.groupingBy { it }.eachCount()
                 .map { Pair(it.key, it.value) }
@@ -159,7 +160,7 @@ object ColorSchemas {
     fun white() = StaticColors(listOf(Color.WHITE))::getColor
     fun specials() = StaticColors(listOf(Color.WHITE) + List(10) {Color.YELLOW})::getColor
     fun staticColors() = StaticColors(default_colors)::getColor
-    fun staticColors(colors: List<Color>) = StaticColors(colors)::getColor
+    fun staticColors(colors: List<Color>, default: Color? = null ) = StaticColors(colors, default)::getColor
     fun heatMapColors(min: Int, max: Int, colors: List<Color>, outColor: Color) = HeatMapColors(min, max, colors, outColor)::getColor
     fun heatMapColors(min: Int, max: Int) = HeatMapColors(min, max, listOf(Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED), Color.BLACK)::getColor
 
@@ -184,9 +185,9 @@ object ColorSchemas {
         }
     }
 
-    private class StaticColors(val colors: List<Color>) {
+    private class StaticColors(val colors: List<Color>, val default: Color? = null) {
         fun getColor(point: Point, value: Int): Color {
-            return colors[value % colors.size]
+            return if (value < colors.size) colors[value] else default ?: colors[value % colors.size]
         }
     }
 

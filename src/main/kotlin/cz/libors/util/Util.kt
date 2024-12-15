@@ -165,7 +165,7 @@ fun Box.contains(p: Point) =
 fun Box.center() = Point((this.first.x + this.second.x) / 2, (this.first.y + this.second.y) / 2)
 fun Box.size() = Pair(this.second.x - this.first.x + 1, this.second.y - this.first.y + 1)
 
-fun Pair<Point, Point>.invert(points: Set<Point>): Set<Point> {
+fun Box.invert(points: Set<Point>): Set<Point> {
     val result = mutableSetOf<Point>()
     for (x in this.first.x..this.second.x)
         for (y in this.first.y..this.second.y) {
@@ -245,12 +245,12 @@ data class Vector(val x: Int, val y: Int) {
         val LEFT_DOWN = Vector(-1, 1)
         val RIGHT_DOWN = Vector(1, 1)
 
-        fun from(s: String): Vector? = when (s.lowercase()) {
+        fun from(s: String, mandatory: Boolean = true): Vector? = when (s.lowercase()) {
             "north", "up", "u", "^" -> UP
             "east", "right", "r", ">" -> RIGHT
             "south", "down", "d", "v" -> DOWN
             "west", "left", "l", "<" -> LEFT
-            else -> null
+            else -> if (mandatory) throw IllegalArgumentException("Unknown vector: '$s'") else null
         }
 
         fun orthogonalVectors(): List<Vector> = listOf(UP, RIGHT, DOWN, LEFT)

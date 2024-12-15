@@ -17,7 +17,7 @@ object Day24 {
 
         val startWing = input.subList(1, input.size - 1).flatMapIndexed { rowIdx, row ->
             row.toCharArray().toList().subList(1, row.length - 1)
-                .mapIndexed { colIdx, col -> Point(colIdx, rowIdx) to Vector.from(col.toString()) }
+                .mapIndexed { colIdx, col -> Point(colIdx, rowIdx) to Vector.from(col.toString(), mandatory = false) }
                 .filter { it.second != null } as List<Pair<Point, Vector>>
         }
 
