@@ -34,6 +34,7 @@ class Graphics(
 
     private val snapshots = mutableListOf<Snapshot>()
     private var snapshotIdx = 0
+    private var snapshotsCreated = 0
 
     init {
         val keyListener = MyKeyAdapter({ debugSwitch() }, { previous() }, { next() })
@@ -45,6 +46,7 @@ class Graphics(
         SwingUtilities.invokeLater {
             frame!!.isVisible = true
         }
+        if (debugOn) semaphore.acquire()
     }
 
     private fun next() {
@@ -55,15 +57,20 @@ class Graphics(
             } else {
                 semaphore.release()
             }
+        } else {
+            debugOn = true
         }
-
     }
 
     private fun previous() {
-        if (debugOn && rememberHistory) {
-            if (snapshotIdx > 0) {
-                snapshotIdx--
-                showSnapshot(snapshots[snapshotIdx])
+        if (rememberHistory) {
+            if (debugOn) {
+                if (snapshotIdx > 0) {
+                    snapshotIdx--
+                    showSnapshot(snapshots[snapshotIdx])
+                }
+            } else {
+                debugOn = true
             }
         }
     }
@@ -77,12 +84,12 @@ class Graphics(
         }
     }
 
-    fun showInts(points: Map<Point, Int>) {
+    fun showInts(points: Map<Point, Int>, title: String = "") {
         val showPoints = points.map { ShowPoint(it.key, colorSchema(it.key, it.value), null) }
-        showGraphicPoints(showPoints, "")
+        showGraphicPoints(showPoints, title)
     }
 
-    fun showChars(points: Map<Point, Char>, order: String = "", showNotStated: Boolean = false) {
+    fun showChars(points: Map<Point, Char>, order: String = "", showNotStated: Boolean = false, title: String = "") {
         val result = mutableListOf<ShowPoint>()
         val orderIndices = order.toCharArray().mapIndexed { idx, ch -> ch to idx }.toMap()
         val otherIndices = if (!showNotStated && order.isNotEmpty()) mapOf() else
@@ -102,24 +109,25 @@ class Graphics(
                 result.add(ShowPoint(p, colorSchema(p, colorIdx), if (displayLabels) ch else null))
             }
         }
-        showGraphicPoints(result, "")
+        showGraphicPoints(result, title)
     }
 
-    fun showBodies(bodies: List<Iterable<Point>>) = showBodies(bodies.map { Body(it.toSet()) })
-    fun showPoints(points: List<Point>, info: String = "") = showBodies(listOf(Body(points.toSet())), info)
+    fun showPointLists(bodies: List<Iterable<Point>>, title: String = "") = showBodies(bodies.map { Body(it.toSet()) }, title)
+    fun showPoints(points: Iterable<Point>, title: String = "") = showBodies(listOf(Body(points.toSet())), title)
 
-    fun showBodies(bodies: List<Body>, info: String = "") {
+    fun showBodies(bodies: List<Body>, title: String = "") {
         val showPoints = bodies.flatMapIndexed { bodyIdx, body ->
             body.points.map { ShowPoint(it, colorSchema(it, bodyIdx), null) }
         }
-        showGraphicPoints(showPoints, info)
+        showGraphicPoints(showPoints, title)
     }
 
-    private fun showGraphicPoints(showPoints: List<ShowPoint>, info: String = "") {
+    private fun showGraphicPoints(showPoints: List<ShowPoint>, title: String = "") {
         if (frame == null) {
             init()
         }
-        val snapshot = Snapshot(info, showPoints)
+        val snapshot = Snapshot(title.ifEmpty { snapshotsCreated.toString() }, showPoints)
+        snapshotsCreated++
         if (rememberHistory) {
             snapshots.add(snapshot)
             snapshotIdx = snapshots.size - 1
@@ -133,11 +141,11 @@ class Graphics(
     }
 
     private fun showSnapshot(s: Snapshot) {
-        frame!!.title = s.text
+        frame!!.title = s.title + if (debugOn) "    (debug)" else "    (running)"
         surface.setPoints(s.points)
     }
 
-    private data class Snapshot(val text: String, val points: List<ShowPoint>)
+    private data class Snapshot(val title: String, val points: List<ShowPoint>)
 
 }
 
@@ -271,7 +279,7 @@ private class Surface(
         fontMetrics = g.getFontMetrics(myFont);
 
         g2d.paint = Color.WHITE
-        g2d.fillRect(tx(min.x), ty(min.y), tx(maxBound.x) - tx(min.x), ty(maxBound.y) - ty(min.y))
+        g2d.fillRect(tx(min.x), tyNoInverse(min.y), tx(maxBound.x) - tx(min.x), tyNoInverse(maxBound.y) - tyNoInverse(min.y))
         if (showEmpty) {
             val nonEmpty = points.map { it.coords }.toSet()
             for (x in min.x..max.x)
@@ -326,6 +334,7 @@ private class Surface(
     }
 
     private inline fun tx(x: Int) = (x - min.x) * pointSize
+    private inline fun tyNoInverse(y: Int) = (y - min.y) * pointSize
     private inline fun ty(y: Int) = if (inverse) (max.y - y) * pointSize else (y - min.y) * pointSize
 
 }
