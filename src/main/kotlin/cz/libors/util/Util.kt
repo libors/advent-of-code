@@ -264,6 +264,7 @@ data class Vector(val x: Int, val y: Int) {
     fun turnRight() = Vector(-y, x)
     fun negative() = Vector(-x, -y)
     operator fun times(factor: Int) = Vector(x * factor, y * factor)
+    operator fun unaryMinus() = Vector (-x, -y)
     fun manhattanDistance() = abs(x) + abs(y)
 }
 

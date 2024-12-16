@@ -1,14 +1,95 @@
 package cz.libors.aoc.aoc24
 
-import cz.libors.util.readToLines
+import cz.libors.util.*
 
+@Day("Reindeer Maze")
 object Day16 {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val input = readToLines("test.txt")
+        val input = readToLines("input16.txt").toPointsWithValue().toMap().toMutableMap()
+        val start = input.filter { it.value == 'S' }.keys.first()
+        val end = input.filter { it.value == 'E' }.keys.first()
+        input[start] = '.'
+        input[end] = '.'
 
-        println(input)
+        val best = task1(input, start, end)
+        println(best)
+        println(task2(input, start, end, best))
     }
 
+    private fun task1(maze: Map<Point, Char>, start: Point, end: Point): Int {
+        val distances = shortestPaths(maze, Pair(start, Vector.RIGHT))
+        return Vector.orthogonalVectors().mapNotNull { distances.pathTo(Pair(end, it)).getScore() }.min()
+    }
+
+    private fun task2(maze: Map<Point, Char>, start: Point, end: Point, best: Int) =
+        Finder(maze, start, end, best).find()
+
+    private fun shortestPaths(maze: Map<Point, Char>, start: Pair<Point, Vector>) =
+        dijkstraToAll(start,
+            neighboursFn = { (pos, dir) ->
+                val result = mutableListOf(Pair(pos, dir.turnRight()), Pair(pos, dir.turnLeft()))
+                if (maze[pos + dir] == '.') result.add(Pair(pos + dir, dir))
+                result
+            },
+            distanceFn = { a, b -> if (a.second == b.second) 1 else 1000 })
+
+    // count distances from (pos, dir) to end to stop DFS branches when they got too long
+    private fun minDistancesToEnd(maze: Map<Point, Char>, end: Point): Map<Pair<Point, Vector>, Int> {
+        val pathPoints = maze.filter { it.value == '.' }.keys
+        val pathsList = Vector.orthogonalVectors().map { shortestPaths(maze, Pair(end, it)) }
+        val result = mutableMapOf<Pair<Point, Vector>, Int>()
+        for (paths in pathsList) {
+            for (p in pathPoints) {
+                for (v in Vector.orthogonalVectors()) {
+                    val item = Pair(p, v)
+                    val dist = paths.pathTo(Pair(p, -v))
+                    if (dist.hasPath()) {
+                        val currentMin = result[item]
+                        if (currentMin == null || currentMin > dist.getScore()!!) {
+                            result[item] = dist.getScore()!!
+                        }
+                    }
+                }
+            }
+        }
+        return result
+    }
+
+    private class Finder(val maze: Map<Point, Char>, val start: Point, val end: Point, val bestScore: Int) {
+        private val bestNodes = mutableSetOf(start, end)
+        private val visited = mutableSetOf(start)
+        private val endDistMap = minDistancesToEnd(maze, end)
+
+        fun find(): Int {
+            dfs(start, Vector.RIGHT, 0)
+//            Graphics(charOrder = "#.@", colorSchema = ColorSchemas.staticColors(listOf(Color.GRAY, Color.WHITE, Color.ORANGE)))
+//                .showChars(maze + bestNodes.associateWith { '@' })
+            return bestNodes.size
+        }
+
+        private fun dfs(pos: Point, dir: Vector, score: Int) {
+            if (pos == end) {
+                if (score == bestScore) bestNodes.addAll(visited)
+                return
+            }
+            val distToEnd = endDistMap[Pair(pos, dir)]
+            if (distToEnd == null || score + distToEnd > bestScore) return
+            val options = listOf(
+                Option(pos + dir, dir, 1),
+                Option(pos + dir.turnRight(), dir.turnRight(), 1001),
+                Option(pos + dir.turnLeft(), dir.turnLeft(), 1001)
+            )
+            for (option in options) {
+                if (maze[option.pos] == '.' && !visited.contains(option.pos)) {
+                    visited.add(option.pos)
+                    dfs(option.pos, option.dir, score + option.addScore)
+                    visited.remove(option.pos)
+                }
+            }
+        }
+
+        private data class Option(val pos: Point, val dir: Vector, val addScore: Int)
+    }
 }
