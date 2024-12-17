@@ -17,7 +17,7 @@ object Day17 {
     }
 
     private fun task1(registers: List<Long>, program: List<Int>) =
-        Computer(registers.toMutableList(), program).run().joinToString(",")
+        Computer(registers[0], registers[1], registers[2], program).run().joinToString(",")
 
     private fun task2(program: List<Int>) = backtrack(0L, 0, program)
 
@@ -26,7 +26,7 @@ object Day17 {
         val expected = Pair(program[program.size - step - 1].toLong(), a)
         var i = 8 * a
         while (i < 8 * (a + 1)) {
-            if (runCycle(i) == expected) {
+            if (runCycle(i, program) == expected) {
                 val inner = backtrack(i, step + 1, program)
                 if (inner != -1L) return inner
             }
@@ -35,33 +35,30 @@ object Day17 {
         return -1
     }
 
-    // ! this is transcription of my input, not a general solution to all inputs
-    private fun runCycle(a: Long): Pair<Long, Long> {
-        var b = a % 8
-        b = b xor 2
-        val c = a / (2.0.pow(b.toDouble())).toLong()
-        b = b xor 7
-        b = b xor c
-        return Pair(b % 8, a / 8)
+    private fun runCycle(a: Long, program: List<Int>): Pair<Long, Long> {
+        return Pair(Computer(a, 0L, 0L, program).run(true)[0].toLong(), a / 8)
     }
 
-    class Computer(private val registers: MutableList<Long>, private val program: List<Int>) {
+    private class Computer(private var a: Long,
+                   private var b: Long,
+                   private var c: Long,
+                   private val program: List<Int>) {
         private val output = mutableListOf<Int>()
         private var instPointer = 0
 
         private val instructions = listOf<(Int) -> Unit>(
-            { registers[0] = (registers[0] / 2.0.pow(comboOperand(it).toDouble())).toLong() }, // adv
-            { registers[1] = registers[1] xor it.toLong() }, // bxl
-            { registers[1] = comboOperand(it) % 8 }, // bst
-            { if (registers[0] != 0L) instPointer = it - 2 }, // jnz
-            { registers[1] = registers[1] xor registers[2] }, // bxc
+            { a = (a / 2.0.pow(comboOperand(it).toDouble())).toLong() }, // adv
+            { b = b xor it.toLong() }, // bxl
+            { b = comboOperand(it) % 8 }, // bst
+            { if (a != 0L) instPointer = it - 2 }, // jnz
+            { b = b xor c }, // bxc
             { output.add((comboOperand(it) % 8).toInt()) }, // out
-            { registers[1] = (registers[0] / 2.0.pow(comboOperand(it).toDouble())).toLong() }, // bdv
-            { registers[2] = (registers[0] / 2.0.pow(comboOperand(it).toDouble())).toLong() }, // cdv
+            { b = (a / 2.0.pow(comboOperand(it).toDouble())).toLong() }, // bdv
+            { c = (a / 2.0.pow(comboOperand(it).toDouble())).toLong() }, // cdv
         )
 
-        fun run(): List<Int> {
-            while (instPointer < program.size) {
+        fun run(oneCycle: Boolean = false): List<Int> {
+            while (if (oneCycle) output.isEmpty() else instPointer < program.size) {
                 val instruction = instructions[program[instPointer]]
                 val operand = program[instPointer + 1]
                 instruction(operand)
@@ -72,7 +69,9 @@ object Day17 {
 
         private fun comboOperand(x: Int): Long = when (x) {
             0, 1, 2, 3 -> x.toLong()
-            4, 5, 6 -> registers[x - 4]
+            4 -> a
+            5 -> b
+            6 -> c
             else -> throw IllegalArgumentException("Unexpected op: $x")
         }
     }
