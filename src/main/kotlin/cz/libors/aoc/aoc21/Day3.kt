@@ -13,7 +13,7 @@ object Day3 {
         println(task2(input))
     }
 
-    fun task1(input: List<String>): Int {
+    private fun task1(input: List<String>): Int {
         var x = ""
         var y = ""
         for (i in 0 until input[0].length) {
@@ -24,7 +24,7 @@ object Day3 {
         return x.toInt(2) * y.toInt(2)
     }
 
-    fun task2(input: List<String>): Int {
+    private fun task2(input: List<String>): Int {
         var inp = input
         var i = 0
         while (inp.size > 1) {

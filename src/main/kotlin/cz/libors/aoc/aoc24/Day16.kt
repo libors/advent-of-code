@@ -36,26 +36,11 @@ object Day16 {
             distanceFn = { a, b -> if (a.second == b.second) 1 else 1000 })
 
     // count distances from (pos, dir) to end to stop DFS branches when they got too long
-    private fun minDistancesToEnd(maze: Map<Point, Char>, end: Point): Map<Pair<Point, Vector>, Int> {
-        val pathPoints = maze.filter { it.value == '.' }.keys
-        val pathsList = Vector.orthogonalVectors().map { shortestPaths(maze, Pair(end, it)) }
-        val result = mutableMapOf<Pair<Point, Vector>, Int>()
-        for (paths in pathsList) {
-            for (p in pathPoints) {
-                for (v in Vector.orthogonalVectors()) {
-                    val item = Pair(p, v)
-                    val dist = paths.pathTo(Pair(p, -v))
-                    if (dist.hasPath()) {
-                        val currentMin = result[item]
-                        if (currentMin == null || currentMin > dist.getScore()!!) {
-                            result[item] = dist.getScore()!!
-                        }
-                    }
-                }
-            }
-        }
-        return result
-    }
+    private fun minDistancesToEnd(maze: Map<Point, Char>, end: Point) = Vector.orthogonalVectors()
+        .flatMap { shortestPaths(maze, Pair(end, it)).distances().toList() }
+        .groupBy { it.first }
+        .map { (k, v) -> Pair(k.first, -k.second) to v.minOf { it.second } }
+        .toMap()
 
     private class Finder(val maze: Map<Point, Char>, val start: Point, val end: Point, val bestScore: Int) {
         private val bestNodes = mutableSetOf(start, end)

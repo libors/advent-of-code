@@ -15,7 +15,7 @@ object Day18 {
 
     }
 
-    fun task1() {
+    private fun task1() {
 
     }
 

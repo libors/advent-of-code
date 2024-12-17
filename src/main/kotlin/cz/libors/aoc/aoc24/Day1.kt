@@ -18,6 +18,6 @@ object Day1 {
         println(task2(l1, l2))
     }
 
-    fun task1(l1: List<Int>, l2: List<Int>) = l1.zip(l2).sumOf { abs(it.first - it.second) }
-    fun task2(l1: List<Int>, l2: List<Int>) = l1.sumOf { first -> first * l2.count { first == it } }
+    private fun task1(l1: List<Int>, l2: List<Int>) = l1.zip(l2).sumOf { abs(it.first - it.second) }
+    private fun task2(l1: List<Int>, l2: List<Int>) = l1.sumOf { first -> first * l2.count { first == it } }
 }

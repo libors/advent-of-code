@@ -455,6 +455,7 @@ class ShortestPaths<K>(
     private val paths: Map<K, PathToNode<K>>) {
 
     fun pathTo(node: K) = ShortestPath(start, paths, node)
+    fun distances() = paths.mapValues { it.value.score }
 }
 
 class ShortestPath<K>(

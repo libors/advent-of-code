@@ -17,8 +17,8 @@ object Day11 {
         println(task2(input)).also { memo.clear() }
     }
 
-    fun task1(stones: List<Long>) = stones.sumOf { countStones(it, 25) }
-    fun task2(stones: List<Long>) = stones.sumOf { countStones(it, 75) }
+    private fun task1(stones: List<Long>) = stones.sumOf { countStones(it, 25) }
+    private fun task2(stones: List<Long>) = stones.sumOf { countStones(it, 75) }
 
     private fun countStones(stone: Long, steps: Int): Long {
         if (steps == 0) return 1

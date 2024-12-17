@@ -15,9 +15,9 @@ object Day7 {
         println(task2(input))
     }
 
-    fun task1(input: List<Long>) = (input.minOf { it }..input.maxOf { it })
+    private fun task1(input: List<Long>) = (input.minOf { it }..input.maxOf { it })
         .map { align -> input.sumOf { abs(align - it) } }.minOf { it }
 
-    fun task2(input: List<Long>) = (input.minOf { it }..input.maxOf { it })
+    private fun task2(input: List<Long>) = (input.minOf { it }..input.maxOf { it })
         .map { align -> input.sumOf { abs(align - it) * (abs(align - it) + 1) } / 2 }.minOf { it }
 }

@@ -26,7 +26,7 @@ object Day2 {
         println(task2(input))
     }
 
-    fun task1(items: List<Item>): Int {
+    private fun task1(items: List<Item>): Int {
         var p = Point(0, 0)
         for (i in items) {
             p += i.v * i.num
@@ -34,7 +34,7 @@ object Day2 {
         return p.x * p.y
     }
 
-    fun task2(items: List<Item>): Int {
+    private fun task2(items: List<Item>): Int {
         var aim = 0
         var hor = 0
         var depth = 0
