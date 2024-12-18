@@ -18,29 +18,25 @@ object Day16 {
         println(task2(input, start, end, best))
     }
 
-    private fun task1(maze: Map<Point, Char>, start: Point, end: Point): Int {
-        val distances = shortestPaths(maze, Pair(start, Vector.RIGHT))
-        return Vector.orthogonalVectors().mapNotNull { distances.pathTo(Pair(end, it)).getScore() }.min()
-    }
+    private fun task1(maze: Map<Point, Char>, start: Point, end: Point) =
+        shortestPaths(maze, Pair(start, Vector.RIGHT), end).pathTo(Pair(end, Vector.RIGHT)).getScore()!!
 
     private fun task2(maze: Map<Point, Char>, start: Point, end: Point, best: Int) =
         Finder(maze, start, end, best).find()
 
-    private fun shortestPaths(maze: Map<Point, Char>, start: Pair<Point, Vector>) =
+    private fun shortestPaths(maze: Map<Point, Char>, start: Pair<Point, Vector>, freeTurn: Point) =
         dijkstraToAll(start,
             neighboursFn = { (pos, dir) ->
                 val result = mutableListOf(Pair(pos, dir.turnRight()), Pair(pos, dir.turnLeft()))
                 if (maze[pos + dir] == '.') result.add(Pair(pos + dir, dir))
                 result
             },
-            distanceFn = { a, b -> if (a.second == b.second) 1 else 1000 })
+            distanceFn = { a, b -> if (a.second == b.second) 1 else if (a.first == freeTurn) 0 else 1000 })
 
     // count distances from (pos, dir) to end to stop DFS branches when they got too long
-    private fun minDistancesToEnd(maze: Map<Point, Char>, end: Point) = Vector.orthogonalVectors()
-        .flatMap { shortestPaths(maze, Pair(end, it)).distances().toList() }
-        .groupBy { it.first }
-        .map { (k, v) -> Pair(k.first, -k.second) to v.minOf { it.second } }
-        .toMap()
+    private fun minDistancesToEnd(maze: Map<Point, Char>, end: Point) =
+        shortestPaths(maze, Pair(end, Vector.RIGHT), end).distances()
+            .mapKeys { (k, _) -> Pair(k.first, -k.second) }
 
     private class Finder(val maze: Map<Point, Char>, val start: Point, val end: Point, val bestScore: Int) {
         private val bestNodes = mutableSetOf(start, end)

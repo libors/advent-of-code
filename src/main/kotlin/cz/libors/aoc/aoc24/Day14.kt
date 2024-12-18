@@ -3,6 +3,7 @@ package cz.libors.aoc.aoc24
 import cz.libors.util.*
 import kotlin.math.max
 
+@Day("Restroom Redoubt")
 object Day14 {
 
     @JvmStatic

@@ -3,10 +3,7 @@ package cz.libors.util
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.collections.ArrayList
-import kotlin.math.abs
-import kotlin.math.absoluteValue
-import kotlin.math.max
-import kotlin.math.min
+import kotlin.math.*
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
@@ -71,6 +68,8 @@ fun String.splitByNewLine(): List<String> = this.split(Regex("\r?\n"))
 
 fun Int.posMod(x: Int) = (this % x).let { if (it >= 0) it else it + x }
 fun Double.isLong() = this % 1 == 0.0
+fun Long.pow(x: Int) = this.toDouble().pow(x).toLong()
+fun Long.pow(x: Long) = this.toDouble().pow(x.toDouble()).toLong()
 
 fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 fun gcd(a: Long, b: Long): Long = if (b == 0L) a else gcd(b, a % b)

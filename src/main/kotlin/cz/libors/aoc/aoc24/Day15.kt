@@ -24,7 +24,7 @@ object Day15 {
             'O' -> "[]"
             else -> "$it$it"
         }
-    }.joinToString(separator = "")
+    }.joinToString("")
 
     private fun replaceStart(maze: MutableMap<Point, Char>): Point = maze.filter { it.value == '@' }.keys.first()
         .also { maze[it] = '.' }
