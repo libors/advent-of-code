@@ -1,6 +1,7 @@
 package cz.libors.aoc.aoc24
 
 import cz.libors.util.*
+import kotlin.time.measureTime
 
 private typealias Visited = Pair<Point, Vector>
 
@@ -17,16 +18,21 @@ object Day6 {
         println(task2(input, guardPos, guardDir))
     }
 
-    private fun task1(map: Map<Point, Char>, start: Point, startDir: Vector) = go(map, start, startDir)
-        .visited.map { it.first }.distinct().count()
+    private fun task1(map: Map<Point, Char>, start: Point, startDir: Vector) = go(map, start, startDir).visited.distinct().count()
 
     private fun task2(map: Map<Point, Char>, start: Point, startDir: Vector): Int {
         val newMap = map.toMutableMap()
         var loops = 0
-        val possibleObstacles = go(map, start, startDir).visited.map { it.first }.distinct() - start
-        for (obstacle in possibleObstacles) {
+        val possibleObstacles = go(map, start, startDir).visited
+        val alreadyObstacles = mutableSetOf<Point>()
+        for (i in 1 until possibleObstacles.size) {
+            val obstacle = possibleObstacles[i]
+            if (alreadyObstacles.contains(obstacle)) {continue}
+            alreadyObstacles.add(obstacle)
             newMap[obstacle] = '#'
-            if (go(newMap, start, startDir).isCycle) loops++
+            val cycleStartFrom = possibleObstacles[i - 1]
+            val cycleStartDir = possibleObstacles[i - 1].vectorTo(possibleObstacles[i])
+            if (go(newMap, cycleStartFrom, cycleStartDir).isCycle) loops++
             newMap[obstacle] = '.'
         }
         return loops
@@ -34,20 +40,24 @@ object Day6 {
 
     private fun go(map: Map<Point, Char>, start: Point, startDir: Vector): GoResult {
         val visited = mutableSetOf<Pair<Point, Vector>>()
+        val pointsOnPath = mutableListOf<Point>()
         var guardPos = start
         var guardDir = startDir
         while (true) {
             val state = Pair(guardPos, guardDir)
-            if (visited.contains(state)) return GoResult(true, visited)
+            if (visited.contains(state)) return GoResult(true, pointsOnPath)
             visited.add(state)
+            if (pointsOnPath.isEmpty() || pointsOnPath.last() != guardPos) {
+                pointsOnPath.add(guardPos)
+            }
             val next = guardPos + guardDir
             when (map[next]) {
-                null -> return GoResult(false, visited)
+                null -> return GoResult(false, pointsOnPath)
                 '#' -> guardDir = guardDir.turnRight()
                 else -> guardPos += guardDir
             }
         }
     }
 
-    private data class GoResult(val isCycle: Boolean, val visited: Set<Visited>)
+    private data class GoResult(val isCycle: Boolean, val visited: List<Point>)
 }
