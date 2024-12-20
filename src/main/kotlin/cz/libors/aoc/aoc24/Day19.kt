@@ -24,7 +24,7 @@ object Day19 {
 
     private fun findCounts(options: List<String>, designs: List<String>) = designs.map { Finder(it, options).count() }
 
-    class Finder(private val design: String, private val options: List<String>) {
+    private class Finder(private val design: String, private val options: List<String>) {
         private val memo = Array(design.length + 1) { -1L }
 
         fun count() = find(0)

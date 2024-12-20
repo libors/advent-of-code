@@ -232,6 +232,7 @@ data class Body(val points: Set<Point>) {
 }
 
 fun List<Int>.toPoint() = Point(this[0], this[1])
+fun List<Int>.toPoint3() = Point3(this[0], this[1], this[2])
 
 data class Vector(val x: Int, val y: Int) {
     companion object {
@@ -420,6 +421,14 @@ fun <K> dijkstra(
         }
     }
     return ShortestPath(start, seen, endNode)
+}
+
+fun <K> bfsToAll(
+    start: K,
+    neighboursFn: (K) -> Iterable<K>
+): ShortestPaths<K> {
+    val paths = bfs(start, {_ -> false}, neighboursFn)
+    return ShortestPaths(start, paths.paths)
 }
 
 fun <K> bfs(
