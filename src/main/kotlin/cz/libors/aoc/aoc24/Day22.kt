@@ -17,36 +17,38 @@ object Day22 {
         println(task2(input))
     }
 
-    private fun task1(input: List<Long>) = input.sumOf {
+    private fun task1(secretNums: List<Long>) = secretNums.sumOf {
         var a = it
-        repeat(DERIVE_REPEAT) { a = derive(a) }
+        repeat(DERIVE_REPEAT) { a = deriveNext(a) }
         a
     }
 
-    private fun task2(input: List<Long>): Int {
-        val maps = input.map { priceChangeSequences(it) }
-        return (0 until SEQUENCES_MAX_SIZE)
-            .maxOf { idx -> maps.sumOf { val a = it[idx].toInt(); if (a == -1) 0 else a } }
+    private fun task2(secretNums: List<Long>): Int {
+        val sums = IntArray(SEQUENCES_MAX_SIZE)
+        secretNums.forEach { updateSumsForNum(it, sums) }
+        return sums.max()
     }
 
     private data class PriceChange(val price: Int, val change: Int)
 
-    private fun priceChangeSequences(x: Long): ByteArray {
-        val result = ByteArray(SEQUENCES_MAX_SIZE) { -1 }
+    private fun updateSumsForNum(secretNum: Long, sums: IntArray) {
+        val used = BooleanArray(SEQUENCES_MAX_SIZE)
         val changes = mutableListOf<PriceChange>()
-        var a = x
-        var prev = lastDigit(a)
+        var currentSecretNum = secretNum
+        var prevPrice = lastDigit(currentSecretNum)
         for (i in 1..DERIVE_REPEAT) {
-            a = derive(a)
-            val price = lastDigit(a)
-            changes.add(PriceChange(price, price - prev))
-            prev = price
+            currentSecretNum = deriveNext(currentSecretNum)
+            val price = lastDigit(currentSecretNum)
+            changes.add(PriceChange(price, price - prevPrice))
+            prevPrice = price
         }
         for (i in 3 until DERIVE_REPEAT) {
             val idx = arrayIdx(changes[i - 3].change, changes[i - 2].change, changes[i - 1].change, changes[i].change)
-            if (result[idx] == (-1).toByte()) result[idx] = changes[i].price.toByte()
+            if (!used[idx]) {
+                sums[idx] += changes[i].price
+                used[idx] = true
+            }
         }
-        return result
     }
 
     private fun arrayIdx(a: Int, b: Int, c: Int, d: Int) = a + 9 + (b + 9) * PRICE_DIFF_SPAN +
@@ -55,8 +57,8 @@ object Day22 {
 
     private fun lastDigit(a: Long) = (a % 10).toInt()
 
-    private fun derive(x: Long): Long {
-        var res = (x * 64) xor x
+    private fun deriveNext(secretNum: Long): Long {
+        var res = (secretNum * 64) xor secretNum
         res %= MOD_VALUE
         res = (res / 32) xor res
         res %= MOD_VALUE
