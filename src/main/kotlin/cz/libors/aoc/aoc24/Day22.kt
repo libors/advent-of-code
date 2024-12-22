@@ -1,13 +1,14 @@
 package cz.libors.aoc.aoc24
 
-import cz.libors.util.Day
-import cz.libors.util.readToLines
+import cz.libors.util.*
 
 @Day("Monkey Market")
 object Day22 {
 
     private const val MOD_VALUE = 16777216
     private const val DERIVE_REPEAT = 2000
+    private const val PRICE_DIFF_SPAN = 19
+    private const val SEQUENCES_MAX_SIZE = PRICE_DIFF_SPAN * PRICE_DIFF_SPAN * PRICE_DIFF_SPAN * PRICE_DIFF_SPAN
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -24,14 +25,14 @@ object Day22 {
 
     private fun task2(input: List<Long>): Int {
         val maps = input.map { priceChangeSequences(it) }
-        val keys = maps.flatMap { it.keys }.distinct()
-        return keys.maxOf { key -> maps.sumOf { it[key] ?: 0 } }
+        return (0 until SEQUENCES_MAX_SIZE)
+            .maxOf { idx -> maps.sumOf { val a = it[idx].toInt(); if (a == -1) 0 else a } }
     }
 
     private data class PriceChange(val price: Int, val change: Int)
 
-    private fun priceChangeSequences(x: Long): Map<List<Int>, Int> {
-        val result = mutableMapOf<List<Int>, Int>()
+    private fun priceChangeSequences(x: Long): ByteArray {
+        val result = ByteArray(SEQUENCES_MAX_SIZE) { -1 }
         val changes = mutableListOf<PriceChange>()
         var a = x
         var prev = lastDigit(a)
@@ -42,11 +43,15 @@ object Day22 {
             prev = price
         }
         for (i in 3 until DERIVE_REPEAT) {
-            val seq = listOf(changes[i - 3].change, changes[i - 2].change, changes[i - 1].change, changes[i].change)
-            if (!result.containsKey(seq)) result[seq] = changes[i].price
+            val idx = arrayIdx(changes[i - 3].change, changes[i - 2].change, changes[i - 1].change, changes[i].change)
+            if (result[idx] == (-1).toByte()) result[idx] = changes[i].price.toByte()
         }
         return result
     }
+
+    private fun arrayIdx(a: Int, b: Int, c: Int, d: Int) = a + 9 + (b + 9) * PRICE_DIFF_SPAN +
+            (c + 9) * PRICE_DIFF_SPAN * PRICE_DIFF_SPAN +
+            (d + 9) * PRICE_DIFF_SPAN * PRICE_DIFF_SPAN * PRICE_DIFF_SPAN
 
     private fun lastDigit(a: Long) = (a % 10).toInt()
 

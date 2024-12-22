@@ -14,6 +14,7 @@ typealias IntSet = Int
 fun IntSet.set(i: Int): IntSet = this or (1 shl i)
 fun IntSet.isSet(i: Int): Boolean = (this and (1 shl i)) != 0
 fun IntSet.isNotSet(i: Int): Boolean = (this and (1 shl i)) == 0
+fun IntSet.set(i: Int, value: Int) = this or (value shl i)
 
 private fun resolveResourcePath(x: String): String {
     val traceLine = Thread.currentThread().stackTrace.first { it.className.contains("aoc.aoc") }
