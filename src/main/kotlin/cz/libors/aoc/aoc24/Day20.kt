@@ -2,6 +2,7 @@ package cz.libors.aoc.aoc24
 
 import cz.libors.util.*
 
+@Day("Race Condition")
 object Day20 {
 
     @JvmStatic
@@ -20,17 +21,17 @@ object Day20 {
 
     private fun countCheats(maze: Set<Point>, start: Point, end: Point, cheatTime: Int): Int {
         val noCheatScore = bfs(start, { it == end }) { it.neighbours().filter { n -> maze.contains(n) }}.getScore()!!
-        val distancesToEnd = bfsToAll(end, { it.neighbours().filter { n -> maze.contains(n) } }).distances()
-        val distancesFromStart = bfsToAll(start, { it.neighbours().filter { n -> maze.contains(n) } }).distances()
+        val distToEnd = bfsToAll(end, { it.neighbours().filter { n -> maze.contains(n) } }).distances()
+        val distFromStart = bfsToAll(start, { it.neighbours().filter { n -> maze.contains(n) } }).distances()
         var cnt = 0
         for (source in maze) {
-            for (x in source.x - cheatTime..source.x + cheatTime) {
-                for (y in source.y - cheatTime..source.y + cheatTime) {
-                    val target = Point(x, y)
+            for (xdiff in -cheatTime..cheatTime) {
+                for (ydiff in -cheatTime..cheatTime) {
+                    val target = Point(source.x + xdiff, source.y + ydiff)
                     if (maze.contains(target)) {
-                        val dist = source.manhattanDistance(target)
-                        if (dist <= cheatTime) {
-                            val newScore = distancesFromStart[source]!! + distancesToEnd[target]!! + dist
+                        val cheatDist = source.manhattanDistance(target)
+                        if (cheatDist <= cheatTime) {
+                            val newScore = distFromStart[source]!! + cheatDist + distToEnd[target]!!
                             val savedScore = noCheatScore - newScore
                             if (savedScore >= 100) cnt++
                         }

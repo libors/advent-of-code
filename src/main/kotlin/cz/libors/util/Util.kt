@@ -491,8 +491,9 @@ class ShortestPath<K>(
     override fun toString() = "Path $start -> $end : ${getScore()}"
 }
 
+typealias MultiMap<K,V> = MutableMap<K, LinkedList<V>>
 fun <K, V> multiMap() = mutableMapOf<K, LinkedList<V>>()
-fun <K, V> MutableMap<K, LinkedList<V>>.add(k: K, v: V) = this.computeIfAbsent(k) { _ -> LinkedList() }.add(v)
+fun <K, V> MultiMap<K, V>.add(k: K, v: V) = this.computeIfAbsent(k) { _ -> LinkedList() }.add(v)
 
 class Timer(val name: String = "Time") {
     private val start = System.currentTimeMillis()
