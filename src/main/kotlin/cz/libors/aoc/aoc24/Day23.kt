@@ -1,16 +1,13 @@
 package cz.libors.aoc.aoc24
 
 import cz.libors.util.*
-import kotlin.collections.HashSet
-import kotlin.time.measureTime
 
 @Day("LAN Party")
 object Day23 {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val input = readToLines("input23.txt")
-            .map { val sides = it.findAlphanums(); Pair(sides[0], sides[1]) }
+        val input = readToLines("input23.txt").map { it.findAlphanums().let { ints -> Pair(ints[0], ints[1]) } }
         val graph = createGraph(input)
         println(task1(graph))
         println(task2(graph))
@@ -46,28 +43,25 @@ object Day23 {
 
     private fun <T> findCliques(nodes: MultiMap<T, T>): Set<Set<T>> {
         val graph = nodes.mapValues { it.value.toSet() }
-        val vertices = nodes.keys.toMutableSet()
+        val result = mutableSetOf<Set<T>>()
 
-        fun <TT: T> bronKerbosch(clique: Set<TT>, potential: MutableSet<TT>, rejected: MutableSet<TT>): Set<Set<TT>> {
-            val cliques = mutableSetOf<Set<TT>>()
+        fun <TT: T> bronKerbosch(clique: List<TT>, potential: MutableList<TT>, rejected: MutableList<TT>) {
             if (potential.isEmpty() && rejected.isEmpty()) {
-                cliques.add(HashSet(clique))
+                result.add(HashSet(clique))
             }
             while (potential.isNotEmpty()) {
-                val node = potential.iterator().next()
-                val newClique = HashSet(clique)
-                newClique.add(node)
-                val newPotential = HashSet(potential)
+                val node = potential.last()
+                val newPotential = ArrayList(potential)
                 newPotential.retainAll(graph[node]!!)
-                val newNotInClique = HashSet(rejected)
-                newNotInClique.retainAll(graph[node]!!)
-                cliques.addAll(bronKerbosch(newClique, newPotential, newNotInClique))
-                potential.remove(node)
+                val newRejected = ArrayList(rejected)
+                newRejected.retainAll(graph[node]!!)
+                bronKerbosch(clique + node, newPotential, newRejected)
+                potential.removeLast()
                 rejected.add(node)
             }
-            return cliques
         }
 
-        return bronKerbosch(mutableSetOf(), vertices, mutableSetOf())
+        bronKerbosch(listOf(), nodes.keys.toMutableList(), mutableListOf())
+        return result
     }
 }
