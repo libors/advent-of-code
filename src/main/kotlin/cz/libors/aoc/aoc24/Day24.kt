@@ -5,6 +5,8 @@ import cz.libors.util.*
 @Day("Crossed Wires")
 object Day24 {
 
+    private const val INPUT_BITS = 44
+
     @JvmStatic
     fun main(args: Array<String>) {
         val input = readToText("input24.txt").splitByEmptyLine()
@@ -40,13 +42,13 @@ object Day24 {
         val outputs = ops.map { it.output }.toMutableSet()
         for (output in outputs) {
             val newOps = switchOutput(ops, "vvw", output)
-            if (isOk(parts, newOps)) println("heureka $output")
+            if (isAdder(parts, newOps)) println("heureka $output")
         }
     }
 
     private fun findAdderProblemsForSecondAnd(ops: List<Op>) {
         println("RESOLVING A2")
-        for (i in 0..44) {
+        for (i in 0..INPUT_BITS) {
             val idx = i.toString().padStart(2, '0')
             val found = ops.filter { it.hasInput("X1-$idx") && it.op == "AND" }
             if (found.size != 1) println("error for $idx: found $found")
@@ -55,7 +57,7 @@ object Day24 {
 
     private fun findAdderProblmesForSecondXor(ops: List<Op>) {
         println("RESOLVING X2")
-        for (i in 0..44) {
+        for (i in 0..INPUT_BITS) {
             val idx = i.toString().padStart(2, '0')
             val found = ops.filter { it.hasInput("X1-$idx") && it.op == "XOR" }
             when (found.size) {
@@ -68,7 +70,7 @@ object Day24 {
     private fun findAdderProblemsForFirstAnd(ops: List<Op>): List<Op> {
         println("RESOLVING A1")
         val a1Map = mutableMapOf<String, String>()
-        for (i in 0..44) {
+        for (i in 0..INPUT_BITS) {
             val idx = i.toString().padStart(2, '0')
             val found = ops.filter { it.hasInput("x$idx") && it.hasInput("y$idx") && it.op == "AND" }
             when (found.size) {
@@ -84,13 +86,12 @@ object Day24 {
     private fun findAdderProblemsForFirstXor(ops: List<Op>): List<Op> {
         println("RESOLVING X1")
         val x1Map = mutableMapOf<String, String>()
-        for (i in 0..44) {
+        for (i in 0..INPUT_BITS) {
             val idx = i.toString().padStart(2, '0')
             val found = ops.filter { it.hasInput("x$idx") && it.hasInput("y$idx") && it.op == "XOR" }
             when (found.size) {
                 1 -> if (found[0].output.startsWith("z")) println("suspicious output: ${found[0]}") else x1Map[found[0].output] =
                     "X1-$idx"
-
                 else -> println("error for $idx")
             }
         }
@@ -105,7 +106,7 @@ object Day24 {
         }
     }
 
-    private fun isOk(parts: List<Part>, ops: List<Op>): Boolean {
+    private fun isAdder(parts: List<Part>, ops: List<Op>): Boolean {
         val computed = task1(parts, ops)
         val x = parts.filter { it.type == 'x' }.sortedBy { it.num }.reversed().map { if (it.value) 1 else 0 }
             .joinToString("")
@@ -115,10 +116,7 @@ object Day24 {
         return computed == expected
     }
 
-    private fun task1(
-        parts: List<Part>,
-        ops: List<Op>
-    ): Long {
+    private fun task1(parts: List<Part>, ops: List<Op>): Long {
         val pMap = parts.associate { it.name to it.value }.toMutableMap()
 
         var notProcessed = ops.toList()
