@@ -247,10 +247,10 @@ data class Vector(val x: Int, val y: Int) {
         val RIGHT_DOWN = Vector(1, 1)
 
         fun from(s: String, mandatory: Boolean = true): Vector? = when (s.lowercase()) {
-            "north", "up", "u", "^" -> UP
-            "east", "right", "r", ">" -> RIGHT
-            "south", "down", "d", "v" -> DOWN
-            "west", "left", "l", "<" -> LEFT
+            "n", "north", "up", "u", "^" -> UP
+            "e", "east", "right", "r", ">" -> RIGHT
+            "s", "south", "down", "d", "v" -> DOWN
+            "w", "west", "left", "l", "<" -> LEFT
             else -> if (mandatory) throw IllegalArgumentException("Unknown vector: '$s'") else null
         }
 
@@ -265,7 +265,9 @@ data class Vector(val x: Int, val y: Int) {
     fun turnRight() = Vector(-y, x)
     fun negative() = Vector(-x, -y)
     operator fun times(factor: Int) = Vector(x * factor, y * factor)
+    fun add(other: Vector) = Vector(x + other.x, y + other.y)
     operator fun unaryMinus() = Vector (-x, -y)
+    operator fun plus(other: Vector) = this.add(other)
     fun manhattanDistance() = abs(x) + abs(y)
 }
 

@@ -9,7 +9,7 @@ import java.util.function.Supplier
 
 object Runner {
 
-    private val years = listOf("21", "22", "23", "24")
+    private val years = listOf("20", "21", "22", "23", "24")
 
     private data class DayRecord(val year: Int, val num: Int, val time: Long, val lines: Int, val notImplemented: Boolean)
 
