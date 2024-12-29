@@ -131,13 +131,15 @@ data class Point(val x: Int, val y: Int) {
     fun vectorTo(other: Point) = Vector(other.x - x, other.y - y)
     fun switch() = Point(y, x)
     fun neighbours(alsoDiag: Boolean = false) = if (alsoDiag) adjacentPoints() + diagonalPoints() else adjacentPoints()
-    private fun adjacentPoints(): List<Point> = listOf(add(Vector.UP), add(Vector.DOWN), add(Vector.LEFT), add(Vector.RIGHT))
+    private fun adjacentPoints(): List<Point> =
+        listOf(add(Vector.UP), add(Vector.DOWN), add(Vector.LEFT), add(Vector.RIGHT))
+
     fun diagonalPoints(): List<Point> =
         listOf(add(Vector.RIGHT_DOWN), add(Vector.RIGHT_UP), add(Vector.LEFT_DOWN), add(Vector.LEFT_UP))
 
     inline fun series(direction: Vector, includeStart: Boolean = false, isValid: (Point) -> Boolean): List<Point> {
         val result = mutableListOf(this)
-        if (includeStart){
+        if (includeStart) {
             result.add(this)
         }
         var p = this.plus(direction)
@@ -189,6 +191,7 @@ fun <T> String.readTree(fn: (String) -> T): TreeNode<T> {
                 bracket = i
                 current = mutableListOf()
             }
+
             in close -> {
                 if (value != "") {
                     current.add(TreeNode(null, fn(value), listOf()))
@@ -198,12 +201,14 @@ fun <T> String.readTree(fn: (String) -> T): TreeNode<T> {
                 pushed.add(TreeNode(bracket, null, current))
                 current = pushed
             }
+
             ',' -> {
                 if (value != "") {
                     current.add(TreeNode(null, fn(value), listOf()))
                     value = ""
                 }
             }
+
             else -> value += i
         }
     }
@@ -211,7 +216,7 @@ fun <T> String.readTree(fn: (String) -> T): TreeNode<T> {
 }
 
 data class TreeNode<T>(val bracket: Char? = '[', val v: T? = null, val items: List<TreeNode<T>> = listOf()) {
-    fun isValue() = v!= null
+    fun isValue() = v != null
     override fun toString(): String {
         return v?.toString() ?: "[${items.joinToString(",")}]"
     }
@@ -266,7 +271,7 @@ data class Vector(val x: Int, val y: Int) {
     fun negative() = Vector(-x, -y)
     operator fun times(factor: Int) = Vector(x * factor, y * factor)
     fun add(other: Vector) = Vector(x + other.x, y + other.y)
-    operator fun unaryMinus() = Vector (-x, -y)
+    operator fun unaryMinus() = Vector(-x, -y)
     operator fun plus(other: Vector) = this.add(other)
     fun manhattanDistance() = abs(x) + abs(y)
 }
@@ -321,7 +326,7 @@ fun dividePoints(points: Iterable<Point>, isNeighbor: (Point, Point) -> Boolean)
     val result = mutableListOf<Set<Point>>()
     for (p in points) {
         if (!processed.contains(p)) {
-            val area = flood(p) { it.neighbours().filter { n -> isNeighbor(it, n) }}
+            val area = flood(p) { it.neighbours().filter { n -> isNeighbor(it, n) } }
             result.add(area)
             processed.addAll(area)
         }
@@ -395,7 +400,7 @@ fun <K> dijkstraToAll(
     distanceFn: (K, K) -> Int = { _, _ -> 1 },
     neighboursFn: (K) -> Iterable<K>
 ): ShortestPaths<K> {
-    val paths = dijkstra(start, {_ -> false}, distanceFn, neighboursFn)
+    val paths = dijkstra(start, { _ -> false }, distanceFn, neighboursFn)
     return ShortestPaths(start, paths.paths)
 }
 
@@ -430,7 +435,7 @@ fun <K> bfsToAll(
     start: K,
     neighboursFn: (K) -> Iterable<K>
 ): ShortestPaths<K> {
-    val paths = bfs(start, {_ -> false}, neighboursFn)
+    val paths = bfs(start, { _ -> false }, neighboursFn)
     return ShortestPaths(start, paths.paths)
 }
 
@@ -463,7 +468,8 @@ data class PathToNode<K>(val from: K, val score: Int)
 
 class ShortestPaths<K>(
     val start: K,
-    private val paths: Map<K, PathToNode<K>>) {
+    private val paths: Map<K, PathToNode<K>>
+) {
 
     fun pathTo(node: K) = ShortestPath(start, paths, node)
     fun distances() = paths.mapValues { it.value.score }
@@ -494,7 +500,8 @@ class ShortestPath<K>(
     override fun toString() = "Path $start -> $end : ${getScore()}"
 }
 
-typealias MultiMap<K,V> = MutableMap<K, LinkedList<V>>
+typealias MultiMap<K, V> = MutableMap<K, LinkedList<V>>
+
 fun <K, V> multiMap() = mutableMapOf<K, LinkedList<V>>()
 fun <K, V> MultiMap<K, V>.add(k: K, v: V) = this.computeIfAbsent(k) { _ -> LinkedList() }.add(v)
 
@@ -533,4 +540,78 @@ private fun <T> permute(list: List<T>, k: Int, fn: (List<T>) -> Boolean, result:
         Collections.swap(list, k, i)
     }
     if (k == list.size - 1 && fn(list)) result.set(ArrayList(list))
+}
+
+class Circle<T> {
+    private var size = 0
+    private val empty = Node<T>(null)
+    private var current: Node<T> = empty
+    private var head = empty
+
+    fun add(x: T) {
+        if (size == 0) {
+            current = Node(x)
+            head = current
+        } else {
+            val r = current.right
+            val n = Node(x, current, r)
+            current.right = n
+            r.left = n
+            current = n
+        }
+        size++
+    }
+
+    fun move(x: Int) {
+        if (x == 0) return
+        if (x > 0) {
+            for (i in 1..x) current = current.right
+        } else {
+            for (i in 1..-x) current = current.left
+        }
+    }
+
+    fun remove(): T {
+        require(size > 0)
+        val result = current.value()
+        if (size == 0) {
+            current = empty
+            head = empty
+        } else {
+            if (current == head) head = current.right
+            current.right.left = current.left
+            current.left.right = current.right
+            val r = current.right
+            current.left = empty
+            current.right = empty
+            current.value = null
+            current = r
+        }
+        size--
+        return result
+    }
+
+    override fun toString(): String {
+        if (size == 0) return "[]"
+        val sb = StringBuilder()
+        sb.append("[")
+        var n = head
+        do {
+            if (n == current) sb.append("(")
+            sb.append(n.value)
+            if (n == current) sb.append(")")
+            sb.append(" ")
+            n = n.right
+        } while (n != head)
+        sb.setLength(sb.length - 1)
+        sb.append("]")
+        return sb.toString()
+    }
+
+    private class Node<TT>(var value: TT?, left: Node<TT>? = null, right: Node<TT>? = null) {
+        var left: Node<TT> = if (left == null) this else left
+        var right: Node<TT> = if (right == null) this else right
+        fun value(): TT = value!!
+    }
+
 }
