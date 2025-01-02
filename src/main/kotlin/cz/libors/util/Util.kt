@@ -542,6 +542,18 @@ private fun <T> permute(list: List<T>, k: Int, fn: (List<T>) -> Boolean, result:
     if (k == list.size - 1 && fn(list)) result.set(ArrayList(list))
 }
 
+class Composite<T>(val item: T, val children: MutableList<Composite<T>> = mutableListOf()) {
+    fun add(item: T) {
+        children.add(Composite(item))
+    }
+
+    fun add(composite: Composite<T>) {
+        children.add(composite)
+    }
+
+    override fun toString() = "{$item: [${children.joinToString(",")}]}"
+}
+
 class Circle<T> {
     private var size = 0
     private val empty = Node<T>(null)
