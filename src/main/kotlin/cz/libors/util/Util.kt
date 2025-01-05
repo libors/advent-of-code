@@ -1,8 +1,9 @@
 package cz.libors.util
 
+import cz.libors.aoc.aoc16.Day5
+import java.security.MessageDigest
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.collections.ArrayList
 import kotlin.math.*
 
 @Target(AnnotationTarget.CLASS)
@@ -15,6 +16,10 @@ fun IntSet.set(i: Int): IntSet = this or (1 shl i)
 fun IntSet.isSet(i: Int): Boolean = (this and (1 shl i)) != 0
 fun IntSet.isNotSet(i: Int): Boolean = (this and (1 shl i)) == 0
 fun IntSet.set(i: Int, value: Int) = this or (value shl i)
+
+typealias LongSet = Long
+fun LongSet.set(i: Int): LongSet = this or (1L shl i)
+fun LongSet.unset(i: Int): LongSet = this and (1L shl i).inv()
 
 private fun resolveResourcePath(x: String): String {
     val traceLine = Thread.currentThread().stackTrace.first { it.className.contains("aoc.aoc") }
@@ -41,7 +46,7 @@ fun String.findInts(): List<Int> = Regex("-?[0-9]+")
     .map { it.value.toInt() }
     .toList()
 
-fun String.findLongs(): List<Long> = Regex("-?[0-9]+")
+fun String.findLongs(positive: Boolean = false): List<Long> = Regex(if (positive) "[0-9]+" else "-?[0-9]+")
     .findAll(this)
     .map { it.value.toLong() }
     .toList()
@@ -76,21 +81,15 @@ fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 fun gcd(a: Long, b: Long): Long = if (b == 0L) a else gcd(b, a % b)
 fun lcm(a: Long, b: Long): Long = a / gcd(a, b) * b
 
-fun bisect(interval: Pair<Long, Long>, value: Double, function: (Long) -> Double): Long {
-    var start = interval.first
-    var end = interval.second
-    val reverse = function(start) > function(end)
-    while (start < end) {
-        val middle = (start + end) / 2
+fun bisectLeft(interval: Pair<Long, Long>, target: Double, function: (Long) -> Double): Long {
+    var lo = interval.first
+    var hi = interval.second
+    while (lo < hi) {
+        val middle = (lo + hi) / 2
         val middleValue = function(middle)
-        val checkValue = if (reverse) -middleValue else middleValue
-        if (checkValue == value)
-            return middle
-        else if (checkValue < value)
-            start = middle + 1
-        else end = middle
+        if (middleValue >= target) hi = middle - 1 else lo = middle + 1
     }
-    return start
+    return lo
 }
 
 fun <T> List<T>.tail() = when {
@@ -151,7 +150,7 @@ data class Point(val x: Int, val y: Int) {
     }
 
     override fun toString() = "[$x, $y]"
-
+    fun coordsString() = "$x,$y"
 }
 
 typealias Box = Pair<Point, Point>
@@ -337,6 +336,7 @@ fun dividePoints(points: Iterable<Point>, isNeighbor: (Point, Point) -> Boolean)
 data class Interval(val from: Long, val to: Long) {
     fun isSubOf(other: Interval) = from >= other.from && to <= other.to
     fun contains(other: Interval) = other.isSubOf(this)
+    fun contains(num: Long) = from <= num && to >= num
     fun overlaps(other: Interval) = from <= other.to && other.from <= to
     fun isEmpty() = EMPTY == this
     fun union(other: Interval) = if (this.overlaps(other))
@@ -525,6 +525,30 @@ class Timer(val name: String = "Time") {
     }
 }
 
+fun permute(n: Int): List<IntArray> {
+    val result = mutableListOf<IntArray>()
+    val array = IntArray(n) { it }
+
+    fun permute(size: Int) {
+        if (size == 1) result.add(array.copyOf())
+        for (i in 0 until size) {
+            permute(size - 1)
+            if (size % 2 == 1) {
+                val temp = array[0];
+                array[0] = array[size - 1];
+                array[size - 1] = temp;
+            } else {
+                val temp = array[i];
+                array[i] = array[size - 1];
+                array[size - 1] = temp;
+            }
+        }
+    }
+
+    permute(n)
+    return result
+}
+
 fun <T> permute(list: List<T>, permutationFn: (List<T>) -> Boolean): List<T> {
     val result = AtomicReference<List<T>>()
     permute(ArrayList(list), 0, permutationFn, result)
@@ -542,6 +566,11 @@ private fun <T> permute(list: List<T>, k: Int, fn: (List<T>) -> Boolean, result:
     if (k == list.size - 1 && fn(list)) result.set(ArrayList(list))
 }
 
+private val md = MessageDigest.getInstance("MD5")
+
+@OptIn(ExperimentalStdlibApi::class)
+fun md5(s: String) = md.digest(s.toByteArray()).toHexString()
+
 class Composite<T>(val item: T, val children: MutableList<Composite<T>> = mutableListOf()) {
     fun add(item: T) {
         children.add(Composite(item))
@@ -554,76 +583,71 @@ class Composite<T>(val item: T, val children: MutableList<Composite<T>> = mutabl
     override fun toString() = "{$item: [${children.joinToString(",")}]}"
 }
 
-class Circle<T> {
-    private var size = 0
-    private val empty = Node<T>(null)
-    private var current: Node<T> = empty
-    private var head = empty
+class CNode<T> (var value: T) {
+    var left: CNode<T> = this
+    var right: CNode<T> = this
 
-    fun add(x: T) {
-        if (size == 0) {
-            current = Node(x)
-            head = current
-        } else {
-            val r = current.right
-            val n = Node(x, current, r)
-            current.right = n
-            r.left = n
-            current = n
+    fun isOnly() = left == this
+
+    fun find(fn: (T) -> Boolean): CNode<T> {
+        if (fn(this.value)) return this
+        var x = this.right
+        while(x != this) {
+            if (fn(x.value)) return x
+            x = x.right
         }
-        size++
+        throw NoSuchElementException()
     }
 
-    fun move(x: Int) {
-        if (x == 0) return
+    fun move(x: Int): CNode<T> {
+        var n = this
         if (x > 0) {
-            for (i in 1..x) current = current.right
+            for (i in 1..x) n = n.right
         } else {
-            for (i in 1..-x) current = current.left
+            for (i in 1..-x) n = n.left
         }
+        return n
     }
 
-    fun remove(): T {
-        require(size > 0)
-        val result = current.value()
-        if (size == 0) {
-            current = empty
-            head = empty
-        } else {
-            if (current == head) head = current.right
-            current.right.left = current.left
-            current.left.right = current.right
-            val r = current.right
-            current.left = empty
-            current.right = empty
-            current.value = null
-            current = r
-        }
-        size--
+    fun removeGetRight(): CNode<T> {
+        require(!isOnly())
+        val result = this.right
+        this.right.left = left
+        this.left.right = right
+        this.right = this
+        this.left = this
         return result
     }
 
+    fun addRight(value: T): CNode<T> {
+        val rightNode = CNode(value)
+        rightNode.right = right
+        rightNode.left = this
+        right.left = rightNode
+        right = rightNode
+        return rightNode
+    }
+
+    fun addLeft(value: T): CNode<T> {
+        val leftNode = CNode(value)
+        leftNode.right = this
+        leftNode.left = left
+        left.right = leftNode
+        left = leftNode
+        return leftNode
+    }
+
     override fun toString(): String {
-        if (size == 0) return "[]"
         val sb = StringBuilder()
         sb.append("[")
-        var n = head
-        do {
-            if (n == current) sb.append("(")
-            sb.append(n.value)
-            if (n == current) sb.append(")")
-            sb.append(" ")
-            n = n.right
-        } while (n != head)
-        sb.setLength(sb.length - 1)
+        sb.append(value)
+        var x = right
+        while (x != this) {
+            sb.append(", ")
+            sb.append(x.value)
+            x = x.right
+        }
         sb.append("]")
         return sb.toString()
     }
-
-    private class Node<TT>(var value: TT?, left: Node<TT>? = null, right: Node<TT>? = null) {
-        var left: Node<TT> = if (left == null) this else left
-        var right: Node<TT> = if (right == null) this else right
-        fun value(): TT = value!!
-    }
-
 }

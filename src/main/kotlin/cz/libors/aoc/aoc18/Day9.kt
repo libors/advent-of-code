@@ -1,9 +1,6 @@
 package cz.libors.aoc.aoc18
 
-import cz.libors.util.Circle
-import cz.libors.util.Day
-import cz.libors.util.findInts
-import cz.libors.util.readToText
+import cz.libors.util.*
 
 @Day("Marble Mania")
 object Day9 {
@@ -19,18 +16,17 @@ object Day9 {
     private fun task2(params: List<Int>) = play(params[0], params[1] * 100)
 
     private fun play(players: Int, maxRound: Int): Long {
-        val circle = Circle<Int>()
         var player = 0
         val scores = LongArray(players)
-        circle.add(0)
+        var x = CNode(0)
         for (round in 1..maxRound) {
             if (round % 23 == 0) {
                 scores[player] += round.toLong()
-                circle.move(-7)
-                scores[player] += circle.remove().toLong()
+                x = x.move(-7)
+                scores[player] += x.value.toLong()
+                x = x.removeGetRight()
             } else {
-                circle.move(1)
-                circle.add(round)
+                x = x.right.addRight(round)
             }
             player = (player + 1) % players
         }

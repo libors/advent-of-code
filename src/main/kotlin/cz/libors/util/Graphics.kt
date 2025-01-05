@@ -20,6 +20,7 @@ class Graphics(
     val rememberHistory: Boolean = false,
     circles: Boolean = false,
     minBoundingBox: Pair<Point, Point>? = null,
+    var window: Pair<Point, Point>? = null,
     showEmpty: Boolean = false,
     inverse: Boolean = false,
     val displayLabels: Boolean = true,
@@ -38,8 +39,8 @@ class Graphics(
     private var snapshotsCreated = 0
 
     init {
-        val keyListener = MyKeyAdapter({ debugSwitch() }, { previous() }, { next() })
-        surface = Surface(keyListener, circles, showEmpty, inverse, minBoundingBox, labelColor)
+        val keyListener = MyKeyAdapter(::debugSwitch, ::previous, ::next, ::moveWindow)
+        surface = Surface(keyListener, circles, showEmpty, inverse, minBoundingBox, window, labelColor)
     }
 
     private fun init() {
@@ -48,6 +49,18 @@ class Graphics(
             frame!!.isVisible = true
         }
         if (debugOn) semaphore.acquire()
+    }
+
+    private fun moveWindow(dir: Vector) {
+        if (window != null) {
+            when (dir) {
+                Vector.DOWN, Vector.UP, Vector.LEFT, Vector.RIGHT -> {
+                    val amount = 1
+                    window = Pair(window!!.first + dir * amount, window!!.second + dir * amount)
+                    surface.updateWindow(window!!)
+                }
+            }
+        }
     }
 
     private fun next() {
@@ -90,7 +103,13 @@ class Graphics(
         showGraphicPoints(showPoints, title)
     }
 
-    fun showChars(points: Map<Point, Char>, showNotStated: Boolean = false, title: String = "") {
+    fun showChars(
+        points: Map<Point, Char>,
+        showNotStated: Boolean = false,
+        title: String = "",
+        percents: Map<Point, Int>? = null,
+        visiblePoint: Point? = null
+    ) {
         val result = mutableListOf<ShowPoint>()
         val orderIndices = charOrder.toCharArray().mapIndexed { idx, ch -> ch to idx }.toMap()
         val otherIndices = if (!showNotStated && charOrder.isNotEmpty()) mapOf() else
@@ -98,7 +117,7 @@ class Graphics(
                 .map { it.value }.groupingBy { it }.eachCount()
                 .map { Pair(it.key, it.value) }
                 .sortedByDescending { it.second }
-                .mapIndexed { idx, p -> p.first to orderIndices.size + idx}
+                .mapIndexed { idx, p -> p.first to orderIndices.size + idx }
                 .toMap()
 
         for ((p, ch) in points) {
@@ -107,13 +126,15 @@ class Graphics(
                 colorIdx = otherIndices[ch]
             }
             if (colorIdx != null) {
-                result.add(ShowPoint(p, colorSchema(p, colorIdx), if (displayLabels) ch else null))
+                result.add(ShowPoint(p, colorSchema(p, colorIdx), if (displayLabels) ch else null, percents?.get(p)))
             }
         }
-        showGraphicPoints(result, title)
+        showGraphicPoints(result, title, visiblePoint)
     }
 
-    fun showPointLists(bodies: List<Iterable<Point>>, title: String = "") = showBodies(bodies.map { Body(it.toSet()) }, title)
+    fun showPointLists(bodies: List<Iterable<Point>>, title: String = "") =
+        showBodies(bodies.map { Body(it.toSet()) }, title)
+
     fun showPoints(points: Iterable<Point>, title: String = "") = showBodies(listOf(Body(points.toSet())), title)
 
     fun showBodies(bodies: List<Body>, title: String = "") {
@@ -123,11 +144,11 @@ class Graphics(
         showGraphicPoints(showPoints, title)
     }
 
-    private fun showGraphicPoints(showPoints: List<ShowPoint>, title: String = "") {
+    private fun showGraphicPoints(showPoints: List<ShowPoint>, title: String = "", visiblePoint: Point? = null) {
         if (frame == null) {
             init()
         }
-        val snapshot = Snapshot(title.ifEmpty { snapshotsCreated.toString() }, showPoints)
+        val snapshot = Snapshot(title.ifEmpty { snapshotsCreated.toString() }, showPoints, visiblePoint)
         snapshotsCreated++
         if (rememberHistory) {
             snapshots.add(snapshot)
@@ -143,10 +164,25 @@ class Graphics(
 
     private fun showSnapshot(s: Snapshot) {
         frame!!.title = s.title + if (debugOn) "    (debug)" else "    (running)"
+        if (s.visiblePoint != null) adjustWindow(s.visiblePoint)
         surface.setPoints(s.points)
     }
 
-    private data class Snapshot(val title: String, val points: List<ShowPoint>)
+    private fun adjustWindow(visiblePoint: Point) {
+        if (window != null) {
+            var inner = Pair(window!!.first + Vector.RIGHT_DOWN * 10, window!!.second + Vector.LEFT_UP * 10)
+            while (!inner.contains(visiblePoint)) {
+                if (visiblePoint.x < inner.first.x + 10) moveWindow(Vector.LEFT)
+                if (visiblePoint.x > inner.second.x - 10) moveWindow(Vector.RIGHT)
+                if (visiblePoint.y < inner.first.y + 10) moveWindow(Vector.UP)
+                if (visiblePoint.y > inner.second.y - 10) moveWindow(Vector.DOWN)
+                inner = Pair(window!!.first + Vector.RIGHT_DOWN * 5, window!!.second + Vector.LEFT_UP * 5)
+            }
+        }
+
+    }
+
+    private data class Snapshot(val title: String, val points: List<ShowPoint>, val visiblePoint: Point?)
 
 }
 
@@ -158,11 +194,14 @@ object ColorSchemas {
     )
 
     fun white() = StaticColors(listOf(Color.WHITE))::getColor
-    fun specials() = StaticColors(listOf(Color.WHITE) + List(10) {Color.YELLOW})::getColor
+    fun specials() = StaticColors(listOf(Color.WHITE) + List(10) { Color.YELLOW })::getColor
     fun staticColors() = StaticColors(default_colors)::getColor
-    fun staticColors(colors: List<Color>, default: Color? = null ) = StaticColors(colors, default)::getColor
-    fun heatMapColors(min: Int, max: Int, colors: List<Color>, outColor: Color) = HeatMapColors(min, max, colors, outColor)::getColor
-    fun heatMapColors(min: Int, max: Int) = HeatMapColors(min, max, listOf(Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED), Color.BLACK)::getColor
+    fun staticColors(colors: List<Color>, default: Color? = null) = StaticColors(colors, default)::getColor
+    fun heatMapColors(min: Int, max: Int, colors: List<Color>, outColor: Color) =
+        HeatMapColors(min, max, colors, outColor)::getColor
+
+    fun heatMapColors(min: Int, max: Int) =
+        HeatMapColors(min, max, listOf(Color.GREEN, Color.YELLOW, Color.ORANGE, Color.RED), Color.BLACK)::getColor
 
 
     private class HeatMapColors(val min: Int, val max: Int, val colors: List<Color>, val outColor: Color) {
@@ -193,7 +232,7 @@ object ColorSchemas {
 
 }
 
-private data class ShowPoint(val coords: Point, val color: Color, val label: Char?)
+private data class ShowPoint(val coords: Point, val color: Color, val label: Char?, val percent: Int? = null)
 
 private class Frame(surface: Surface) : JFrame() {
 
@@ -209,7 +248,8 @@ private class Frame(surface: Surface) : JFrame() {
 private class MyKeyAdapter(
     val debugSwitch: () -> Unit,
     val previous: () -> Unit,
-    val next: () -> Unit
+    val next: () -> Unit,
+    val moveWindow: (Vector) -> Unit,
 ) : KeyAdapter() {
 
     override fun keyPressed(e: KeyEvent) {
@@ -222,6 +262,10 @@ private class MyKeyAdapter(
             }
 
             KeyEvent.VK_SPACE -> debugSwitch()
+            KeyEvent.VK_S -> moveWindow(Vector.DOWN)
+            KeyEvent.VK_W -> moveWindow(Vector.UP)
+            KeyEvent.VK_A -> moveWindow(Vector.LEFT)
+            KeyEvent.VK_D -> moveWindow(Vector.RIGHT)
         }
     }
 }
@@ -231,7 +275,8 @@ private class Surface(
     val circles: Boolean,
     val showEmpty: Boolean,
     val inverse: Boolean,
-    val minBoundingBox: Pair<Point, Point>?,
+    var minBoundingBox: Pair<Point, Point>?,
+    var window: Pair<Point, Point>?,
     val labelColor: Color
 ) : JPanel(),
     ActionListener {
@@ -248,6 +293,13 @@ private class Surface(
     init {
         isFocusable = true
         addKeyListener(keyListener)
+        if (window != null) minBoundingBox = window
+    }
+
+    fun updateWindow(w: Pair<Point, Point>, repaint: Boolean = true) {
+        window = w
+        minBoundingBox = w
+        if (repaint) repaint()
     }
 
     fun setPoints(points: List<ShowPoint>) {
@@ -262,13 +314,15 @@ private class Surface(
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
         val g2d = g as Graphics2D
-        if (points.isEmpty()) return
 
-        min = Point(points.minOf { it.coords.x }, points.minOf { it.coords.y })
-        max = Point(points.maxOf { it.coords.x }, points.maxOf { it.coords.y })
+        val pts = if (window == null) points else points.filter { window!!.contains(it.coords) }
+        if (pts.isEmpty()) return
+
+        min = Point(pts.minOf { it.coords.x }, pts.minOf { it.coords.y })
+        max = Point(pts.maxOf { it.coords.x }, pts.maxOf { it.coords.y })
         if (minBoundingBox != null) {
-            min = Point(min(minBoundingBox.first.x, min.x), min(minBoundingBox.first.y, min.y))
-            max = Point(max(minBoundingBox.second.x, max.x), max(minBoundingBox.second.y, max.y))
+            min = Point(min(minBoundingBox!!.first.x, min.x), min(minBoundingBox!!.first.y, min.y))
+            max = Point(max(minBoundingBox!!.second.x, max.x), max(minBoundingBox!!.second.y, max.y))
         }
         val maxBound = Point(max.x + 1, max.y + 1)
 
@@ -280,16 +334,21 @@ private class Surface(
         fontMetrics = g.getFontMetrics(myFont);
 
         g2d.paint = Color.WHITE
-        g2d.fillRect(tx(min.x), tyNoInverse(min.y), tx(maxBound.x) - tx(min.x), tyNoInverse(maxBound.y) - tyNoInverse(min.y))
+        g2d.fillRect(
+            tx(min.x),
+            tyNoInverse(min.y),
+            tx(maxBound.x) - tx(min.x),
+            tyNoInverse(maxBound.y) - tyNoInverse(min.y)
+        )
         if (showEmpty) {
-            val nonEmpty = points.map { it.coords }.toSet()
+            val nonEmpty = pts.map { it.coords }.toSet()
             for (x in min.x..max.x)
                 for (y in min.y..max.y) {
                     val p = Point(x, y)
                     if (!nonEmpty.contains(p)) paintEmptyPoint(p, g2d)
                 }
         }
-        for (p in points) {
+        for (p in pts) {
             paintPoint(p, g2d)
         }
         g2d.paint = Color.BLACK
@@ -305,7 +364,14 @@ private class Surface(
         if (circles) {
             g.fillOval(x, y, pointSize, pointSize)
         } else {
-            g.fillRect(x, y, pointSize, pointSize)
+            if (p.percent != null && p.percent != 100) {
+                g.paint = Color.WHITE
+                g.fillRect(x, y, pointSize, pointSize)
+                g.paint = p.color
+                g.fillRect(x, y + applyPercents(p.percent), pointSize, pointSize)
+            } else {
+                g.fillRect(x, y, pointSize, pointSize)
+            }
         }
         if (pointSize > 8) {
             g.paint = Color.LIGHT_GRAY
@@ -337,5 +403,6 @@ private class Surface(
     private inline fun tx(x: Int) = (x - min.x) * pointSize
     private inline fun tyNoInverse(y: Int) = (y - min.y) * pointSize
     private inline fun ty(y: Int) = if (inverse) (max.y - y) * pointSize else (y - min.y) * pointSize
+    private inline fun applyPercents(percent: Int) = pointSize * (100 - percent) / 100
 
 }

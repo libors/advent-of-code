@@ -1,13 +1,11 @@
 package cz.libors.aoc.aoc15
 
 import cz.libors.util.Day
+import cz.libors.util.md5
 import cz.libors.util.readToText
-import java.security.MessageDigest
 
 @Day("The Ideal Stocking Stuffer")
 object Day4 {
-
-    private val md = MessageDigest.getInstance("MD5")
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -22,11 +20,8 @@ object Day4 {
     private fun findNum(input: String, prefix: String): Int {
         var i = 0
         while (true) {
-            if ((input + i.toString()).md5().startsWith(prefix)) return i
+            if (md5(input + i.toString()).startsWith(prefix)) return i
             i++
         }
     }
-
-    @OptIn(ExperimentalStdlibApi::class)
-    private fun String.md5() = md.digest(this.toByteArray()).toHexString()
 }
