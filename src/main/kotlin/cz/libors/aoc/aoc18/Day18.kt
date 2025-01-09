@@ -25,7 +25,7 @@ object Day18 {
         val history = mutableMapOf<Map<Point, Char>, Int>()
         var map = input
         var same = Pair(0, 0)
-        val g = Graphics(displayLabels = false, minBoundingBox = input.keys.boundingBox(), charOrder = "#|",
+        val g = Graphics(displayLabels = false, window = input.keys.boundingBox(), charOrder = "#|",
             colorSchema = ColorSchemas.staticColors(listOf(Color.RED, Color.GREEN)), delay = 20)
         for (i in 1..LONG_TIME) {
             //g.showChars(map.filter { it.value != '.' })

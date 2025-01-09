@@ -11,6 +11,7 @@ import java.util.concurrent.Semaphore
 import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
+import kotlin.math.abs
 
 typealias ColorSchema = (Point, Int) -> Color
 
@@ -19,14 +20,14 @@ class Graphics(
     val delay: Long = 100,
     val rememberHistory: Boolean = false,
     circles: Boolean = false,
-    minBoundingBox: Pair<Point, Point>? = null,
     var window: Pair<Point, Point>? = null,
-    showEmpty: Boolean = false,
+    showEmpty: Boolean? = null,
     inverse: Boolean = false,
     val displayLabels: Boolean = true,
     val colorSchema: ColorSchema = ColorSchemas.staticColors(),
     val charOrder: String = "",
-    labelColor: Color = Color.GRAY
+    labelColor: Color = Color.GRAY,
+    val adventTheme: Boolean = false,
 ) {
 
     private val surface: Surface
@@ -40,7 +41,7 @@ class Graphics(
 
     init {
         val keyListener = MyKeyAdapter(::debugSwitch, ::previous, ::next, ::moveWindow)
-        surface = Surface(keyListener, circles, showEmpty, inverse, minBoundingBox, window, labelColor)
+        surface = Surface(keyListener, circles, showEmpty?:adventTheme, inverse, window, labelColor, adventTheme)
     }
 
     private fun init() {
@@ -170,16 +171,22 @@ class Graphics(
 
     private fun adjustWindow(visiblePoint: Point) {
         if (window != null) {
-            var inner = Pair(window!!.first + Vector.RIGHT_DOWN * 10, window!!.second + Vector.LEFT_UP * 10)
+            var inner = innerWindow(window!!)
             while (!inner.contains(visiblePoint)) {
-                if (visiblePoint.x < inner.first.x + 10) moveWindow(Vector.LEFT)
-                if (visiblePoint.x > inner.second.x - 10) moveWindow(Vector.RIGHT)
-                if (visiblePoint.y < inner.first.y + 10) moveWindow(Vector.UP)
-                if (visiblePoint.y > inner.second.y - 10) moveWindow(Vector.DOWN)
-                inner = Pair(window!!.first + Vector.RIGHT_DOWN * 5, window!!.second + Vector.LEFT_UP * 5)
+                if (visiblePoint.x < inner.first.x) moveWindow(Vector.LEFT)
+                if (visiblePoint.x > inner.second.x) moveWindow(Vector.RIGHT)
+                if (visiblePoint.y < inner.first.y) moveWindow(Vector.UP)
+                if (visiblePoint.y > inner.second.y) moveWindow(Vector.DOWN)
+                inner = innerWindow(window!!)
             }
         }
+    }
 
+    private fun innerWindow(w: Box): Box {
+        val size = w.size()
+        val bufferX = min(5, size.first / 5)
+        val bufferY = min(5, size.second / 5)
+        return Pair(Point(w.first.x + bufferX, w.first.y + bufferY), Point(w.second.x - bufferX, w.second.y - bufferY))
     }
 
     private data class Snapshot(val title: String, val points: List<ShowPoint>, val visiblePoint: Point?)
@@ -275,13 +282,13 @@ private class Surface(
     val circles: Boolean,
     val showEmpty: Boolean,
     val inverse: Boolean,
-    var minBoundingBox: Pair<Point, Point>?,
     var window: Pair<Point, Point>?,
-    val labelColor: Color
+    val labelColor: Color,
+    val adventTheme: Boolean
 ) : JPanel(),
     ActionListener {
 
-    private val maxPointSize = 50
+    private val maxPointSize = 100
 
     private var points: List<ShowPoint> = listOf()
     private var pointSize = 10
@@ -293,12 +300,10 @@ private class Surface(
     init {
         isFocusable = true
         addKeyListener(keyListener)
-        if (window != null) minBoundingBox = window
     }
 
     fun updateWindow(w: Pair<Point, Point>, repaint: Boolean = true) {
         window = w
-        minBoundingBox = w
         if (repaint) repaint()
     }
 
@@ -318,11 +323,16 @@ private class Surface(
         val pts = if (window == null) points else points.filter { window!!.contains(it.coords) }
         if (pts.isEmpty()) return
 
-        min = Point(pts.minOf { it.coords.x }, pts.minOf { it.coords.y })
-        max = Point(pts.maxOf { it.coords.x }, pts.maxOf { it.coords.y })
-        if (minBoundingBox != null) {
-            min = Point(min(minBoundingBox!!.first.x, min.x), min(minBoundingBox!!.first.y, min.y))
-            max = Point(max(minBoundingBox!!.second.x, max.x), max(minBoundingBox!!.second.y, max.y))
+        val allMin = Point(points.minOf { it.coords.x }, points.minOf { it.coords.y })
+        val allMax = Point(points.maxOf { it.coords.x }, points.maxOf { it.coords.y })
+        val allBox = Box(allMin, allMax)
+
+        if (window != null) {
+            min = window!!.first
+            max = window!!.second
+        } else {
+            min = allMin
+            max = allMax
         }
         val maxBound = Point(max.x + 1, max.y + 1)
 
@@ -333,7 +343,7 @@ private class Surface(
         myFont = font.deriveFont(Font.PLAIN, pointSize * 0.7F)
         fontMetrics = g.getFontMetrics(myFont);
 
-        g2d.paint = Color.WHITE
+        g2d.paint = if (adventTheme) Color.BLACK else Color.WHITE
         g2d.fillRect(
             tx(min.x),
             tyNoInverse(min.y),
@@ -345,36 +355,72 @@ private class Surface(
             for (x in min.x..max.x)
                 for (y in min.y..max.y) {
                     val p = Point(x, y)
-                    if (!nonEmpty.contains(p)) paintEmptyPoint(p, g2d)
+                    if (!nonEmpty.contains(p) && allBox.contains(p)) paintEmptyPoint(p, g2d)
                 }
         }
         for (p in pts) {
             paintPoint(p, g2d)
         }
-        g2d.paint = Color.BLACK
-        g2d.font = Font(null, Font.PLAIN, max(pointSize / 3, 18))
-        g2d.drawString("${min.x},${min.y}", tx(min.x), ty(min.y) + pointSize * 2 / 3)
-        g2d.drawString("${max.x},${max.y}", tx(maxBound.x - 1), ty(max.y) + pointSize * 2 / 3)
+        paintCoordinates(g2d, maxBound)
+        showWindowPosition(g2d, maxBound.x, allMin, allMax, min, max)
     }
 
+    private fun showWindowPosition(g2d: Graphics2D, maxBoundX: Int, allMin: Point, allMax: Point, min: Point, max: Point) {
+        val totalBox = listOf(allMin, allMax, min, max).boundingBox()
+        val totalSize = totalBox.size()
+        val fullSize = max(totalSize.first, totalSize.second)
+        val ratio = 200.0 / fullSize
+
+        fun len(orig: Int) = abs((ratio * orig).toInt())
+
+        if (allMin != min || allMax != max) {
+            g2d.paint = overlayBoxColor()
+            g2d.fillRect(tx(maxBoundX) - len(totalSize.first), 0, len(totalSize.first), len(totalSize.second))
+            g2d.paint = if (adventTheme) Color.GRAY else Color.LIGHT_GRAY
+            g2d.drawRect(tx(maxBoundX) - len(totalBox.second.x - allMin.x), len(allMin.y), len(allMax.x - allMin.x), len(allMax.y - allMin.y))
+            g2d.paint = if (adventTheme) Color.WHITE else Color.BLUE
+            g2d.drawRect(tx(maxBoundX) - len(totalBox.second.x - min.x), len(min.y),  len(max.x - min.x), len(max.y - min.y))
+        }
+
+    }
+
+    private fun paintCoordinates(g2d: Graphics2D, maxBound: Point) {
+        g2d.font = Font(null, Font.PLAIN, max(pointSize / 3, 18))
+        val minString = "${min.x},${min.y}"
+        val maxString = "${max.x},${max.y}"
+
+        fontMetrics = g2d.getFontMetrics(g2d.font)
+        val minWidth = fontMetrics.stringWidth(minString)
+        val maxWidth = fontMetrics.stringWidth(maxString)
+        g2d.paint = overlayBoxColor()
+        g2d.fillRect(0, 0, minWidth, pointSize)
+        g2d.fillRect(tx(maxBound.x) - maxWidth, ty(max.y), maxWidth, pointSize)
+
+        g2d.paint = if (adventTheme) Color.GRAY else Color.BLACK
+        g2d.drawString(minString, tx(min.x), ty(min.y) + pointSize * 2 / 3)
+        g2d.drawString(maxString, tx(maxBound.x) - maxWidth, ty(max.y) + pointSize * 2 / 3)
+    }
+
+    private fun overlayBoxColor(): Color = if (adventTheme) Color(0, 0, 0, 180) else Color(245, 245, 245, 200)
+
     private fun paintPoint(p: ShowPoint, g: Graphics2D) {
-        g.paint = p.color
+        g.paint = if (adventTheme) Color.BLACK else p.color
         val x = tx(p.coords.x)
         val y = ty(p.coords.y)
         if (circles) {
             g.fillOval(x, y, pointSize, pointSize)
         } else {
             if (p.percent != null && p.percent != 100) {
-                g.paint = Color.WHITE
+                g.paint = if (adventTheme) Color.BLACK else Color.WHITE
                 g.fillRect(x, y, pointSize, pointSize)
-                g.paint = p.color
+                g.paint = Color(p.color.red, p.color.green, p.color.blue, 50)
                 g.fillRect(x, y + applyPercents(p.percent), pointSize, pointSize)
             } else {
                 g.fillRect(x, y, pointSize, pointSize)
             }
         }
         if (pointSize > 8) {
-            g.paint = Color.LIGHT_GRAY
+            g.paint = if (adventTheme) Color.DARK_GRAY else Color.LIGHT_GRAY
             if (circles) {
                 g.drawOval(x, y, pointSize, pointSize)
             } else {
@@ -384,7 +430,7 @@ private class Surface(
 
         if (p.label != null && pointSize > 8) {
             val label = p.label.toString()
-            g.paint = labelColor
+            g.paint = if (adventTheme) p.color else labelColor
             val labelX: Int = x + (pointSize - fontMetrics.stringWidth(label)) / 2;
             val labelY: Int = y + ((pointSize - fontMetrics.getHeight()) / 2) + fontMetrics.getAscent();
             g.font = myFont;

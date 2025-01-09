@@ -7,7 +7,7 @@ typealias OpcodeFn = (Int, Int) -> Int
 @Day("Chronal Classification")
 object Day16 {
 
-    private val opcodes = listOf(
+    val opcodes = listOf(
         Opcode("addr", Int::plus, "rr"),
         Opcode("addi", Int::plus, "ri"),
         Opcode("mulr", Int::times, "rr"),
@@ -72,7 +72,7 @@ object Day16 {
     private fun gt(a: Int, b: Int) = if (a > b) 1 else 0
     private fun eq(a: Int, b: Int) = if (a == b) 1 else 0
 
-    private data class Opcode(val name: String, val fn: OpcodeFn, val aReg: Boolean, val bBreg: Boolean) {
+    data class Opcode(val name: String, val fn: OpcodeFn, val aReg: Boolean, val bBreg: Boolean) {
         constructor(name: String, fn: OpcodeFn, inputs: String) :
                 this(name, fn, inputs[0] == 'r', inputs[1] == 'r')
 

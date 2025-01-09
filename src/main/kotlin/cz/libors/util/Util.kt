@@ -18,6 +18,7 @@ fun IntSet.isNotSet(i: Int): Boolean = (this and (1 shl i)) == 0
 fun IntSet.set(i: Int, value: Int) = this or (value shl i)
 
 typealias LongSet = Long
+
 fun LongSet.set(i: Int): LongSet = this or (1L shl i)
 fun LongSet.unset(i: Int): LongSet = this and (1L shl i).inv()
 
@@ -113,6 +114,24 @@ fun <T> Iterable<T>.toTuples(n: Int): List<List<T>> {
         result.add(subList)
     }
     return result
+}
+
+fun rotate(points: Iterable<Point>) = rotate90(points).let { r -> points.map { r(it) } }
+
+fun flip(points: Iterable<Point>): List<Point> {
+    val b = points.boundingBox()
+    return points.map { Point(b.second.x + b.first.x - it.x, it.y) }
+}
+
+private fun rotate90(points: Iterable<Point>): (Point) -> Point {
+    val box = points.boundingBox()
+    val size = box.size()
+    val newMaxX = box.first.x + size.second - 1
+    return { (x, y) ->
+        val sx = x - box.first.x
+        val sy = y - box.first.y
+        Point(newMaxX - sy, box.first.y + sx)
+    }
 }
 
 data class Point(val x: Int, val y: Int) {
@@ -291,6 +310,31 @@ data class Point3(val x: Int, val y: Int, val z: Int) {
         Point3(x - 1, y, z)
     )
 
+    fun diagonal() = listOf(
+        Point3(x + 1, y, z + 1),
+        Point3(x + 1, y, z - 1),
+        Point3(x - 1, y, z + 1),
+        Point3(x - 1, y, z - 1),
+        Point3(x + 1, y + 1, z),
+        Point3(x + 1, y - 1, z),
+        Point3(x - 1, y + 1, z),
+        Point3(x - 1, y - 1, z),
+        Point3(x, y + 1, z + 1),
+        Point3(x, y + 1, z - 1),
+        Point3(x, y - 1, z + 1),
+        Point3(x, y - 1, z - 1),
+        Point3(x + 1, y + 1, z + 1),
+        Point3(x + 1, y - 1, z + 1),
+        Point3(x + 1, y + 1, z - 1),
+        Point3(x + 1, y - 1, z - 1),
+        Point3(x - 1, y + 1, z + 1),
+        Point3(x - 1, y - 1, z + 1),
+        Point3(x - 1, y + 1, z - 1),
+        Point3(x - 1, y - 1, z - 1),
+    )
+
+    fun neighbours(alsoDiag: Boolean = false) = if (alsoDiag) adjacent() + diagonal() else adjacent()
+
     operator fun plus(v: Vector3) = Point3(x + v.x, y + v.y, z + v.z)
     operator fun minus(v: Vector3) = Point3(x - v.x, y - v.y, z - v.z)
 
@@ -298,6 +342,8 @@ data class Point3(val x: Int, val y: Int, val z: Int) {
 
     fun inRect(min: Point3, max: Point3) =
         x in min.x..max.x && y in min.y..max.y && z in min.z..max.z
+
+    override fun toString() = "[$x, $y, $z]"
 }
 
 fun Iterable<Point3>.boundingBox3() = Pair(
@@ -583,7 +629,7 @@ class Composite<T>(val item: T, val children: MutableList<Composite<T>> = mutabl
     override fun toString() = "{$item: [${children.joinToString(",")}]}"
 }
 
-class CNode<T> (var value: T) {
+class CNode<T>(var value: T) {
     var left: CNode<T> = this
     var right: CNode<T> = this
 
@@ -592,7 +638,7 @@ class CNode<T> (var value: T) {
     fun find(fn: (T) -> Boolean): CNode<T> {
         if (fn(this.value)) return this
         var x = this.right
-        while(x != this) {
+        while (x != this) {
             if (fn(x.value)) return x
             x = x.right
         }

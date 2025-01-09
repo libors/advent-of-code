@@ -27,7 +27,7 @@ object Day15 {
     }.joinToString("")
 
     private fun replaceStart(maze: MutableMap<Point, Char>): Point = maze.filter { it.value == '@' }.keys.first()
-        .also { maze[it] = '.' }
+        .also { maze.remove(it) }
 
     private fun countScore(maze: Map<Point, Char>, char: Char) =
         maze.filter { it.value == char }.keys.sumOf { it.x + it.y * 100 }
@@ -51,11 +51,11 @@ object Day15 {
         for (dir in moves) {
             val nextPos = pos + dir
             pos = when (maze[nextPos]) {
-                '.' -> nextPos
+                null -> nextPos
                 '#' -> pos
                 else -> pushFn(maze, pos, dir)
             }
-            // g.showChars(maze.mapValues { if (it.value == '.') ' ' else it.value } + mapOf(pos to '@'))
+            // g.showChars(maze.mapValues { if (it.value == null) ' ' else it.value } + mapOf(pos to '@'), visiblePoint = pos)
         }
     }
 
@@ -65,7 +65,7 @@ object Day15 {
         while (maze[check] == 'O') check += dir
         return if (maze[check] != '#') {
             maze[check] = 'O'
-            maze[nextPos] = '.'
+            maze.remove(nextPos)
             nextPos
         } else {
             pos
@@ -96,7 +96,7 @@ object Day15 {
                 maze[cpos] = maze[prev]!!
                 cpos = prev
             }
-            maze[next] = '.'
+            maze.remove(next)
             next
         }
     }
@@ -106,14 +106,14 @@ object Day15 {
         for (box in sorted) {
             maze[box + dir] = maze[box]!!
             maze[box.right() + dir] = maze[box.right()]!!
-            maze[box] = '.'
-            maze[box.right()] = '.'
+            maze.remove(box)
+            maze.remove(box.right())
         }
     }
 
     private fun initGraphics() = Graphics(
-        debugFromStart = false, delay = 50, labelColor = Color.BLACK, charOrder = "@# O[]",
-        colorSchema = ColorSchemas.staticColors(listOf(Color.RED, Color.LIGHT_GRAY, Color.WHITE), default = Color.YELLOW)
+        debugFromStart = false, delay = 60, labelColor = Color.BLACK, charOrder = "@# O[]", window = Box(Point(0, 0), Point(30, 15)),
+        colorSchema = ColorSchemas.staticColors(listOf(Color.RED, Color.LIGHT_GRAY, Color.WHITE), default = Color.YELLOW), adventTheme = false,
     )
 
     private fun findBoxes(pos: Point, dir: Vector, maze: Map<Point, Char>): Set<Point> {
