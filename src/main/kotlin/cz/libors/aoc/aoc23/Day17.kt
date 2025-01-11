@@ -19,8 +19,7 @@ object Day17 {
         return dijkstra(
             Position(box.first, Vector.RIGHT, 0),
             endFn = { it.p == box.second },
-            distanceFn = { _, b -> input[b.p]!! },
-            neighboursFn = { neighbours(it).filter { x -> box.contains(x.p) } }).getScore()!!
+            neighboursFn = { neighbours(it).filter { x -> box.contains(x.p) }.map { p -> p to input[p.p]!! } }).getScore()!!
     }
 
     private fun task2(input: Map<Point, Int>): Int {
@@ -28,8 +27,7 @@ object Day17 {
         return dijkstra(
             Position(box.first, Vector.RIGHT, 0),
             endFn = { it.p == box.second && it.dirMoves >= 4 },
-            distanceFn = { _, b -> input[b.p]!! },
-            neighboursFn = { neighbours2(it).filter { x -> box.contains(x.p) } }).getScore()!!
+            neighboursFn = { neighbours2(it).filter { x -> box.contains(x.p) }.map { p -> p to input[p.p]!! } }).getScore()!!
     }
 
     private fun neighbours(pos: Position): Iterable<Position> {

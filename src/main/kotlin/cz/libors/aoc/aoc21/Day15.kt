@@ -29,7 +29,6 @@ object Day15 {
 
     private fun findPath(points: Map<Point, Int>) = points.keys.boundingBox().let { box ->
         dijkstra(box.first, { it == box.second },
-            distanceFn = { _, b -> points[b]!! },
-            neighboursFn = { it.neighbours().filter { x -> points.containsKey(x) } }).getScore()!!
+            neighboursFn = { it.neighbours().filter { x -> points.containsKey(x) }.map { p -> p to points[p]!! } }).getScore()!!
     }
 }

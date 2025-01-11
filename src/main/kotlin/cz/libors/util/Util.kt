@@ -1,6 +1,5 @@
 package cz.libors.util
 
-import cz.libors.aoc.aoc16.Day5
 import java.security.MessageDigest
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
@@ -16,6 +15,16 @@ fun IntSet.set(i: Int): IntSet = this or (1 shl i)
 fun IntSet.isSet(i: Int): Boolean = (this and (1 shl i)) != 0
 fun IntSet.isNotSet(i: Int): Boolean = (this and (1 shl i)) == 0
 fun IntSet.set(i: Int, value: Int) = this or (value shl i)
+fun setAllUpTo(n: Int): IntSet = (1 shl n) - 1
+fun IntSet.countSet() = Integer.bitCount(this)
+
+private fun pow10(n: Int): Int {
+    var result = 1
+    for (i in 1..n) result *= 10
+    return result
+}
+
+fun Long.nthDigit(n: Int): Int = (this % pow10(n) / pow10(n - 1)).toInt()
 
 typealias LongSet = Long
 
@@ -77,6 +86,7 @@ fun Int.posMod(x: Int) = (this % x).let { if (it >= 0) it else it + x }
 fun Double.isLong() = this % 1 == 0.0
 fun Long.pow(x: Int) = this.toDouble().pow(x).toLong()
 fun Long.pow(x: Long) = this.toDouble().pow(x.toDouble()).toLong()
+
 
 fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 fun gcd(a: Long, b: Long): Long = if (b == 0L) a else gcd(b, a % b)
@@ -297,6 +307,8 @@ data class Vector(val x: Int, val y: Int) {
 data class Vector3(val x: Int, val y: Int, val z: Int) {
     fun normalize(): Vector3 = gcd(z, gcd(x, y)).absoluteValue
         .let { if (it == 0) this else Vector3(x / it, y / it, z / it) }
+    operator fun plus(other: Vector3) = Vector3(x + other.x, y + other.y, z + other.z)
+    operator fun unaryMinus() = Vector3(-x, -y, -z)
 }
 
 data class Point3(val x: Int, val y: Int, val z: Int) {
@@ -410,6 +422,12 @@ fun BinOperation(ch: Char): BinOperation = when (ch) {
 
 val DEBUG_ON = false
 
+fun debug(message: String) {
+    if (DEBUG_ON) {
+        println(message)
+    }
+}
+
 fun debug() {
     if (DEBUG_ON) println()
 }
@@ -443,18 +461,25 @@ fun warshall(nodes: Int, distFn: (Int) -> Map<Int, Int>): Array<IntArray> {
 
 fun <K> dijkstraToAll(
     start: K,
-    distanceFn: (K, K) -> Int = { _, _ -> 1 },
-    neighboursFn: (K) -> Iterable<K>
+    neighboursFn: (K) -> Iterable<Pair<K, Int>>
 ): ShortestPaths<K> {
-    val paths = dijkstra(start, { _ -> false }, distanceFn, neighboursFn)
+    val paths = dijkstra(start, { _ -> false }, neighboursFn)
+    return ShortestPaths(start, paths.paths)
+}
+
+fun <K> dijkstraToAll(
+    start: K,
+    neighboursFn: (K) -> Iterable<K>,
+    distanceFn: (K, K) -> Int
+): ShortestPaths<K> {
+    val paths = dijkstra(start, { _ -> false }, { x -> neighboursFn(x).map { n -> n to distanceFn(x, n) } })
     return ShortestPaths(start, paths.paths)
 }
 
 fun <K> dijkstra(
     start: K,
     endFn: (K) -> Boolean,
-    distanceFn: (K, K) -> Int = { _, _ -> 1 },
-    neighboursFn: (K) -> Iterable<K>
+    neighboursFn: (K) -> Iterable<Pair<K, Int>>
 ): ShortestPath<K> {
     val queue = PriorityQueue(compareBy<ScoredNode<K>> { it.score })
     val seen = mutableMapOf<K, PathToNode<K>>()
@@ -464,9 +489,9 @@ fun <K> dijkstra(
     while (queue.isNotEmpty() && endNode == null) {
         val (node, score) = queue.poll()
         if (endFn(node)) endNode = node
-        for (neighbour in neighboursFn(node)) {
+        for ((neighbour, distance) in neighboursFn(node)) {
             val n = seen[neighbour]
-            val newScore = distanceFn(node, neighbour) + score
+            val newScore = distance + score
             if (n == null || n.score > newScore) {
                 val scoredNode = ScoredNode(neighbour, newScore)
                 queue.add(scoredNode)
@@ -569,6 +594,48 @@ class Timer(val name: String = "Time") {
         measure(what)
         return result
     }
+}
+
+fun <T> permutations(array: Array<T>): Iterable<Array<T>> {
+    fun permute(array: Array<T>, left: Int, right: Int, variants: MutableList<Array<T>>) {
+        if (left == right) {
+            variants.add(array.clone())
+        } else {
+            for (i in left..right) {
+                swap(array, left, i)
+                permute(array, left + 1, right, variants)
+                swap(array, left, i)
+            }
+        }
+    }
+
+    val result = mutableListOf<Array<T>>()
+    permute(array.clone(), 0, array.size - 1, result)
+    return result
+}
+
+private fun <T> swap(array: Array<T>, idx1: Int, idx2: Int) {
+    array[idx1] = array[idx2].also { array[idx2] = array[idx1] }
+}
+
+fun combinations(m: Int, n: Int): Iterable<IntArray> {
+    val combination = IntArray(m)
+    val variants = ArrayList<IntArray>()
+    fun generate(k: Int) {
+        if (k >= m) {
+            val variant = IntArray(m)
+            for (i in 0 until m) variant[i] = combination[i]
+            variants.add(variant)
+        } else {
+            for (j in 0 until n)
+                if (k == 0 || j > combination[k - 1]) {
+                    combination[k] = j
+                    generate(k + 1)
+                }
+        }
+    }
+    generate(0)
+    return variants
 }
 
 fun permute(n: Int): List<IntArray> {
